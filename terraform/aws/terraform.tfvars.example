@@ -1,0 +1,59 @@
+// used to name infrastructure (CHANGE THIS)
+name = "bootc-mke3"
+aws = {
+  region = "us-east-1"
+}
+
+subnets = {
+  "AMain" = {
+    cidr       = "172.31.0.0/17"
+    nodegroups = ["AMngr"]
+    private    = false
+  }
+  "AWorkers" = {
+    cidr       = "172.31.128.0/17"
+    nodegroups = ["AWrk"]
+    private    = false
+  }
+}
+
+// configure the network stack
+network = {
+  enable_vpn_gateway = false
+  enable_nat_gateway = false
+  cidr               = "172.31.0.0/16"
+}
+
+// This is the default here, since this folder is dedicated to bootc-mke3 machines,
+// but is spelled out explicitly for clarity.
+is_bootc_based = true
+
+// One definition for each group of machines to include in the stack.
+//
+// bootc-mke3 nodegroups always pin an AMI directly via ami_id + ami_owner — the bootc
+// image is NOT part of the module's built-in 'platform' library. To obtain a current
+// AMI ID and the AWS account that owns it, visit the #bootc-internal channel in the
+// Mirantis Slack space and read the latest release message. See also the note in
+// docs/provisioning.md and docs/runbooks/provision-terraform-aws.md.
+nodegroups = {
+  "AMngr" = { // managers
+    ami_id      = "ami-xxxxxxxxxxxxxxxxx" // bootc-mke3 AMI ID — see #bootc-internal on Slack
+    ami_owner   = "123456789012"          // AWS account ID that owns the AMI — see #bootc-internal on Slack
+    ssh_user    = "cloud-user"            // bootc-mke3 images provision this user (see bootc_userdata.tpl)
+    count       = 1
+    type        = "m6a.2xlarge"
+    volume_size = 100
+    role        = "manager"
+    public      = true
+  },
+  "AWrk" = { // workers
+    ami_id      = "ami-xxxxxxxxxxxxxxxxx" // bootc-mke3 AMI ID — see #bootc-internal on Slack
+    ami_owner   = "123456789012"          // AWS account ID that owns the AMI — see #bootc-internal on Slack
+    ssh_user    = "cloud-user"
+    count       = 1
+    type        = "c6a.xlarge"
+    volume_size = 100
+    role        = "worker"
+    public      = true
+  }
+}
