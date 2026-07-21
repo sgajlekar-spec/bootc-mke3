@@ -45,6 +45,10 @@ No-touch join is the standard way to add worker machines after the initial insta
 
 Command-line access (`kubectl` and `docker`/Swarm) goes through the MKE client bundle — no SSH to cluster machines needed. See the [cluster access runbook](docs/runbooks/access-cluster.md).
 
+## Security
+
+`bootc-mke3` integrates two Kubernetes controllers, `cluster-upgrade-controller` and `machine-config-controller`, to automate cluster and node lifecycle operations. Both delegate privileged, host-mutating operations to per-node jobs — see the [controller security analysis](docs/controller-security-analysis.md) for the full trust model and risk register, and the [hardening runbook](docs/runbooks/harden-mke3-kubernetes.md) for the concrete steps to configure a secure baseline.
+
 ## Troubleshooting
 
 If you encounter issues, file an issue, or talk to us on the #prod-eng or #mkex-internal channel on the Mirantis Slack server.
