@@ -1,8 +1,10 @@
 # Distributes container registry credentials to all hosts.
 #
-# Reads vars/reg-creds from the Ansible controller, encodes each entry as
-# base64(username:password), and writes /etc/ostree/auth.json in the format
-# described by containers-auth.json(5):
+# Reads vars/reg-creds from the Ansible controller and, for each entry, runs
+# `docker login` on the remote host (so docker run/service/swarm pulls
+# authenticate) and writes /etc/ostree/auth.json — base64(username:password)
+# per registry, in the format described by containers-auth.json(5) — so
+# bootc/ostree pulls of the host OS image authenticate too:
 # https://github.com/containers/image/blob/main/docs/containers-auth.json.5.md
 #
 # Usage:

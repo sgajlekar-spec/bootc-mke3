@@ -1,5 +1,10 @@
-# Reads vars/reg-creds from the controller, builds a containers-auth.json
-# payload, and writes it to /etc/ostree/auth.json on the remote host.
+# Reads vars/reg-creds from the controller and configures registry
+# authentication on the remote host two ways:
+#   1. `docker login` for each registry, so Docker CLI/daemon-side pulls
+#      (docker run, docker service create, docker swarm --with-registry-auth)
+#      succeed against private registries.
+#   2. A containers-auth.json payload written to /etc/ostree/auth.json, for
+#      bootc/ostree pulls of the host OS image.
 #
 # Expected reg-creds format (one entry per line):
 #   registry username password
@@ -26,6 +31,17 @@
       Expected: registry username password (three space-separated fields)
   loop: "{{ _reg_creds_lines }}"
   no_log: true
+
+- name: Log in to each configured container registry via Docker
+  ansible.builtin.command:
+    cmd: docker login {{ item.split()[0] }} --username {{ item.split()[1] }} --password-stdin
+    stdin: "{{ item.split()[2] }}"
+  loop: "{{ _reg_creds_lines }}"
+  loop_control:
+    label: "{{ item.split()[0] }}"
+  register: _docker_login
+  changed_when: "'Login Succeeded' in _docker_login.stdout"
+  no_log: true  # credentials must not appear in play output
 
 - name: Build auths mapping (registry → base64-encoded user:pass)
   ansible.builtin.set_fact:
