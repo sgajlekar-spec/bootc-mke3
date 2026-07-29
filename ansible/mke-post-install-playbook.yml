@@ -23,3 +23,17 @@
     bundle_dest: "{{ playbook_dir }}/mke-bundle"
   tasks:
     - ansible.builtin.include_tasks: tasks/cluster-upgrade-controller-tasks.yml
+
+- name: Install machine-config-controller
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - vars/common-vars.yml
+    - vars/mke-creds.yml
+  vars:
+    # mke_url lives in inventory all.vars; pull it from a real host's hostvars
+    # since localhost is not part of the inventory group.
+    mke_url: "{{ hostvars[groups['managers'][0]]['mke_url'] }}"
+    bundle_dest: "{{ playbook_dir }}/mke-bundle"
+  tasks:
+    - ansible.builtin.include_tasks: tasks/machine-config-controller-tasks.yml
