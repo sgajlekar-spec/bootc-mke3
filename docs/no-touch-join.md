@@ -7,6 +7,10 @@ input is a worker join token and a manager endpoint, injected by whatever
 provisions the machine (cloud-init user-data, kickstart, or systemd
 credentials).
 
+No-touch join is the **standard process for adding machines to a cluster after
+the initial install**: production clusters typically disable SSH on cluster
+machines once installed, so the Ansible installer cannot join machines later.
+
 This page describes how the mechanism works. For step-by-step instructions on
 joining machines, see the [no-touch join runbook](runbooks/join-machines-no-touch.md).
 
@@ -74,6 +78,10 @@ needed.
   confirmed join. Cloud-init's own user-data cache copies are scrubbed too.
 - The systemd-credential path supports encrypted and TPM-bound delivery.
 - The mechanism joins **workers only** — there is no manager-promotion path.
+- **Token lifecycle (SOP):** issue a worker token per **batch** of machines,
+  and rotate it on a manager (`docker swarm join-token --rotate worker`) as
+  soon as the batch has joined. Rotation invalidates the issued token, so a
+  leaked copy is no longer a risk; already-joined machines are unaffected.
 
 ## Tunables
 

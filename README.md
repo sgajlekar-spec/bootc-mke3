@@ -39,7 +39,7 @@ To perform an upgrade , please see [upgrade runbook](docs/runbooks/upgrade-bootc
 
 ## Adding machines (no-touch join)
 
-New worker machines can join an existing cluster automatically on first boot — no SSH and no installer re-run. The image ships the mechanism; provisioning only injects a join token. See the [no-touch join description](docs/no-touch-join.md) and the [join machines runbook](docs/runbooks/join-machines-no-touch.md).
+No-touch join is the standard way to add worker machines after the initial install: machines join automatically on first boot with an injected join token — no SSH and no installer re-run (SSH is typically disabled on cluster machines post-install). Issue a token per batch and rotate it after the batch joins. See the [no-touch join description](docs/no-touch-join.md) and the [join machines runbook](docs/runbooks/join-machines-no-touch.md).
 
 ## Troubleshooting
 

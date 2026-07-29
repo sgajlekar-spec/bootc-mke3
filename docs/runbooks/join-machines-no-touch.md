@@ -2,7 +2,22 @@
 
 Add new worker machines to an existing `bootc-mke3` MKE 3 cluster using the
 image's built-in first-boot join — no SSH to the new machine and no re-run of
-the Ansible installer. For how the mechanism works internally, see the
+the Ansible installer.
+
+**This is the standard process for joining machines after the initial
+install.** Production clusters typically disable SSH on cluster machines once
+installed, which makes the Ansible installer unusable for later additions —
+no-touch join is designed for exactly that situation.
+
+The standard operating procedure is batch-oriented:
+
+1. Issue a worker join token on a manager.
+2. Join a **batch** of machines with that token.
+3. **Rotate the token immediately after the batch has joined** — rotation
+   invalidates the issued token, so a leaked credential is no longer a risk.
+   Already-joined machines are unaffected.
+
+For how the mechanism works internally, see the
 [no-touch join description](../no-touch-join.md).
 
 ## Requirements
@@ -26,7 +41,7 @@ docker info --format '{{.Swarm.NodeAddr}}'           # -> manager advertise IP
 
 Use the **worker** token. The manager endpoint is `<NodeAddr>:2377`.
 
-### 2. Inject the credential into the new machine
+### 2. Inject the credential into each new machine
 
 Pick the delivery path that matches how the machine is provisioned. The
 credential payload is identical in all cases:
@@ -79,10 +94,24 @@ Deliver `swarm.token` and `swarm.manager` as systemd system credentials
 unit already imports both; no node-side change is needed. This source takes
 precedence over both file paths.
 
-### 3. Boot the machine
+### 3. Boot the machines
 
-Nothing else to do. On first boot, after Docker is healthy, the machine joins
+Nothing else to do. On first boot, after Docker is healthy, each machine joins
 the swarm as a worker and MKE onboards it automatically.
+
+### 4. Rotate the join token (after the batch has joined)
+
+Once every machine in the batch appears in `docker node ls`, rotate the worker
+token on a manager:
+
+```
+docker swarm join-token --rotate worker
+```
+
+Rotation invalidates the token used for the batch: even if a copy leaked
+(user-data snapshot, kickstart archive, shoulder-surfed console), it can no
+longer be used to join the cluster. Machines that already joined are
+unaffected. The next batch starts again at step 1 with the fresh token.
 
 ## Expected Results
 
@@ -140,9 +169,10 @@ Ansible installer.
 
 ### Does this replace the Ansible worker join?
 
-No — the Ansible installer still joins the workers it provisions. No-touch join
-is for scaling out an existing cluster: new machines join on first boot without
-the installer touching them.
+After the initial install — yes. The Ansible installer joins the workers it
+provisions at install time, but SSH is typically disabled on cluster machines
+afterwards, so the installer cannot add machines later. No-touch join is the
+standard process for all post-install additions.
 
 ### Is the join secure against a rogue manager?
 
