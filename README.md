@@ -37,6 +37,10 @@ To perform the installation, please see [installation runbook](docs/runbooks/ins
 
 To perform an upgrade , please see [upgrade runbook](docs/runbooks/upgrade-bootc-mke3.md).
 
+## Adding machines (no-touch join)
+
+New worker machines can join an existing cluster automatically on first boot — no SSH and no installer re-run. The image ships the mechanism; provisioning only injects a join token. See the [no-touch join description](docs/no-touch-join.md) and the [join machines runbook](docs/runbooks/join-machines-no-touch.md).
+
 ## Troubleshooting
 
 If you encounter issues, file an issue, or talk to us on the #prod-eng or #mkex-internal channel on the Mirantis Slack server.
