@@ -47,23 +47,25 @@ disable_firewalld: false
 # Ref: https://github.com/rancher/system-upgrade-controller
 deploy_suc: true
 
-# Version of System Upgrade Controller (SUC) to deploy. Must match the tag of
-# the rancher/system-upgrade-controller image preloaded into the bootc-mke3
-# image (see /usr/share/mke-controllers/versions.txt on a node, or SUC_VERSION
-# in the bootc-mirantis Makefile) so kubelet finds the image already cached
-# instead of pulling it — bumping this without also bumping the image build's
-# SUC_VERSION reintroduces a pull dependency and breaks air-gapped installs.
-suc_version: "v0.14.0"
-
 # SUC CRD and controller manifest sources, applied via `kubectl apply -f`.
 # Accepts a URL or a local file path resolved on the Ansible controller
 # (delegate_to: localhost) — use an absolute path or "{{ playbook_dir }}/..."
-# rather than a bare relative path. Default pins to the suc_version release
-# tag (not "latest") to stay in sync with the preloaded image above. Override
-# to a local/mirrored copy in air-gapped environments where the controller
-# cannot reach github.com.
-suc_crd_manifest_src: "https://github.com/rancher/system-upgrade-controller/releases/download/{{ suc_version }}/crd.yaml"
-suc_controller_manifest_src: "https://github.com/rancher/system-upgrade-controller/releases/download/{{ suc_version }}/system-upgrade-controller.yaml"
+# rather than a bare relative path.
+#
+# Defaults point at the copies tasks/fetch-controller-manifests-tasks.yml
+# pulls down from a cluster node's /usr/share/mke-controllers/manifests/ (the
+# literal, unmodified upstream release assets bootc-mirantis staged into the
+# image at build time — not templates, the SUC image tag is already baked
+# into system-upgrade-controller.yaml's Deployment spec). Using the
+# node-fetched copy means the installed SUC version always matches what is
+# actually cached on the nodes, with no separate version fact in Ansible
+# that could drift from it and break air-gapped installs.
+#
+# Override to a URL or a different local/mirrored copy if you deliberately
+# want a SUC version other than the one preloaded on this image build
+# (accepts the tradeoff of an online pull, or air-gap accordingly).
+suc_crd_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller-crd.yaml"
+suc_controller_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller.yaml"
 
 # Service account granted the 'privileged' pod-security attribute in the MKE
 # UCPAuthorization allowlist when deploy_suc is true. Format: namespace:name.

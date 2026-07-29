@@ -23,14 +23,15 @@ variable repointed at it.
 | Container image referenced inside that chart's values (controller pod image) | Kubernetes, once the chart is applied | cluster nodes (via kubelet) | whatever the chart's `values.yaml` defaults to — inspect the mirrored chart to find it | not exposed as a variable here — override via chart values if the chart supports it, or patch the deployed image after install |
 | `machine-config-controller` Helm chart (OCI) | `helm upgrade --install` | controller | `oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller` | `vars/common-vars.yml: machine_config_controller_chart` (+ `machine_config_controller_version`) |
 | Container images referenced inside that chart's values (controller + node agent pods) | Kubernetes, once the chart is applied | cluster nodes (via kubelet) | whatever the chart's `values.yaml` defaults to — inspect the mirrored chart to find it | not exposed as a variable here — override via chart values if the chart supports it, or patch the deployed images after install |
-| System Upgrade Controller CRDs/manifest | `kubectl apply -f` | controller | `github.com/rancher/system-upgrade-controller/releases/download/{{ suc_version }}/...` (pinned, not `latest`) | `vars/common-vars.yml: suc_crd_manifest_src`, `suc_controller_manifest_src` — point at a local path or internal mirror URL |
-| `rancher/system-upgrade-controller` container image (referenced *inside* `system-upgrade-controller.yaml`) | Kubernetes, once that manifest is applied | cluster nodes (via kubelet) | Docker Hub (`docker.io/rancher/system-upgrade-controller:{{ suc_version }}`) | not a variable in this repo — either mirror the tag pinned in the manifest you vendor, or edit the vendored manifest's `image:` field to point at your mirror. Must match `suc_version` or the tag preloaded onto bootc-mke3 nodes will not be reused |
+| System Upgrade Controller CRDs/manifest | `kubectl apply -f` | controller | **already air-gap-safe by default** — `tasks/fetch-controller-manifests-tasks.yml` copies the exact manifests bootc-mirantis staged into the image (`/usr/share/mke-controllers/manifests/`) from a node to the controller before applying them; no mirroring needed unless overridden | `vars/common-vars.yml: suc_crd_manifest_src`, `suc_controller_manifest_src` — only override if you deliberately want a different SUC version than the one preloaded on this image |
+| `rancher/system-upgrade-controller` container image (referenced *inside* the fetched manifest) | Kubernetes, once that manifest is applied | cluster nodes (via kubelet) | **already air-gap-safe by default** — the exact tag baked into the fetched manifest is the one `mke-images.service` preloaded into the node's local image store at boot, so kubelet never needs to pull it | not applicable unless `suc_controller_manifest_src` is overridden to a different manifest — then mirror whatever tag *that* manifest references |
 
 Practically: for a fully air-gapped run you need, at minimum, the
 `bootc_image_ref` OS image and the `cluster-upgrade-controller` and
-`machine-config-controller` charts mirrored, plus the two SUC manifests
-vendored locally (with their embedded image references pointed at your
-mirror if `deploy_suc: true`).
+`machine-config-controller` charts mirrored. SUC needs no action for a
+default install — its manifests and container image both come from what
+bootc-mirantis already staged into the image, fetched from a node rather
+than the network.
 
 ## Ansible variables to set
 
@@ -54,9 +55,8 @@ your internal mirror host(s) standing in for `registry.mirantis.com`. Run
 | `cluster_upgrade_controller_version` | `0.1.3` | Pin to whatever version you actually mirrored |
 | `machine_config_controller_chart` | `oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller` | Point at your mirrored OCI chart registry |
 | `machine_config_controller_version` | `0.1.4` | Pin to whatever version you actually mirrored |
-| `suc_version` | `v0.14.0` | Keep in sync with whatever `rancher/system-upgrade-controller` tag you mirrored |
-| `suc_crd_manifest_src` | `https://github.com/rancher/.../releases/download/{{ suc_version }}/crd.yaml` | Local path (e.g. `{{ playbook_dir }}/vendor/suc-crd.yaml`) or internal mirror URL |
-| `suc_controller_manifest_src` | `https://github.com/rancher/.../releases/download/{{ suc_version }}/system-upgrade-controller.yaml` | Same — and the image reference *inside* the vendored file must point at your mirror |
+| `suc_crd_manifest_src` | `{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller-crd.yaml` (node-fetched) | Only override if deploying a SUC version other than the one preloaded on this image — then point at a local path or internal mirror URL, accepting an online pull (or air-gap it yourself) |
+| `suc_controller_manifest_src` | `{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller.yaml` (node-fetched) | Same as above — and the image reference *inside* whatever manifest you point at must be reachable from cluster nodes |
 | `deploy_suc` | `true` | Set `false` if you don't need scheduled OS/MKE upgrades and want to skip the whole SUC dependency chain |
 | `deploy_cluster_upgrade_controller` | `true` | Set `false` to skip the Helm install if not needed |
 | `deploy_machine_config_controller` | `true` | Set `false` to skip the Helm install if not needed |
@@ -66,10 +66,12 @@ your internal mirror host(s) standing in for `registry.mirantis.com`. Run
 
 1. Mirror the artifacts in the table above; note down the internal hostnames/paths.
 2. Create `vars/reg-creds` with every mirror registry host + credentials.
-3. Override `cluster_upgrade_controller_chart`/`cluster_upgrade_controller_version`,
-   `machine_config_controller_chart`/`machine_config_controller_version`, and
-   `suc_version`/`suc_crd_manifest_src`/`suc_controller_manifest_src` (or set
-   `deploy_suc: false` / `deploy_cluster_upgrade_controller: false` /
-   `deploy_machine_config_controller: false` if you don't need them).
+3. Override `cluster_upgrade_controller_chart`/`cluster_upgrade_controller_version` and
+   `machine_config_controller_chart`/`machine_config_controller_version` (or set
+   `deploy_cluster_upgrade_controller: false` / `deploy_machine_config_controller: false`
+   if you don't need them). SUC needs no override for a default install; set
+   `deploy_suc: false` if you don't need scheduled OS/MKE upgrades, or override
+   `suc_crd_manifest_src`/`suc_controller_manifest_src` only if you deliberately
+   want a different SUC version than the one preloaded on this image.
 4. Confirm `helm`/`kubectl` are installed on the controller.
 5. Run `reg-creds-playbook.yml`, then `mke-install-playbook.yml`.

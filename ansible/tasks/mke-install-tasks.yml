@@ -24,3 +24,8 @@
 
 - ansible.builtin.include_tasks: tasks/helpers/mke_status.yml
 - ansible.builtin.include_tasks: tasks/helpers/remove_mke_docker_config.yml
+
+# Fetched here (not in mke-post-install-playbook.yml) because this play
+# still has SSH access to the nodes; post-install may run after sshd/sudo
+# have been revoked.
+- ansible.builtin.include_tasks: tasks/fetch-controller-manifests-tasks.yml
