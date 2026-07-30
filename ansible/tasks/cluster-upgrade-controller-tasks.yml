@@ -8,7 +8,10 @@
 #   4. Patch SUC ConfigMap to extend the job active deadline to 3600 s.
 #   5. Grant system-upgrade-controller service account the privileged attribute
 #      in MKE cluster config when deploy_suc is true (UCPAuthorization allowlist).
-#   6. Install cluster-upgrade-controller via Helm chart when deploy_cluster_upgrade_controller is true.
+#   6. Install cluster-upgrade-controller via Helm chart when deploy_cluster_upgrade_controller
+#      is true — from the node-fetched local chart (default) or an OCI registry
+#      ref, chosen automatically by whether cluster_upgrade_controller_chart
+#      starts with "oci://" (see tasks/fetch-cluster-upgrade-controller-chart-tasks.yml).
 #
 # Required vars (inherited from the enclosing play):
 #   admin_user  – MKE administrator username       (from vars/mke-creds.yml)
@@ -20,7 +23,7 @@
 #   suc_controller_manifest_src – SUC controller manifest URL or local path (from vars/common-vars.yml)
 #   deploy_cluster_upgrade_controller       – when true, installs cluster-upgrade-controller (from vars/common-vars.yml)
 #   cluster_upgrade_controller_release_name – Helm release name
-#   cluster_upgrade_controller_chart        – OCI chart URL
+#   cluster_upgrade_controller_chart        – node-fetched local chart path, or an OCI chart URL
 #   cluster_upgrade_controller_version      – chart version
 #   cluster_upgrade_controller_namespace    – target namespace (created if absent)
 #
@@ -107,7 +110,7 @@
 
 - ansible.builtin.include_tasks: tasks/suc-priv-grant-tasks.yml
   when: deploy_suc | bool
-- name: Install cluster-upgrade-controller via Helm
+- name: Install cluster-upgrade-controller via Helm (OCI registry chart)
   ansible.builtin.command:
     argv:
       - helm
@@ -122,10 +125,29 @@
       - --create-namespace
       - --kubeconfig
       - "{{ bundle_dest }}/kube.yml"
-  when: deploy_cluster_upgrade_controller | bool
+  when: deploy_cluster_upgrade_controller | bool and cluster_upgrade_controller_chart is match('oci://')
   delegate_to: localhost
   run_once: true
   register: _helm_install
   # helm upgrade --install always reports "upgraded" even when nothing changed;
   # there is no reliable stdout signal for a true no-op.
+  changed_when: false
+
+- name: Install cluster-upgrade-controller via Helm (node-fetched local chart)
+  ansible.builtin.command:
+    argv:
+      - helm
+      - upgrade
+      - --install
+      - "{{ cluster_upgrade_controller_release_name }}"
+      - "{{ cluster_upgrade_controller_chart }}"
+      - --namespace
+      - "{{ cluster_upgrade_controller_namespace }}"
+      - --create-namespace
+      - --kubeconfig
+      - "{{ bundle_dest }}/kube.yml"
+  when: deploy_cluster_upgrade_controller | bool and not (cluster_upgrade_controller_chart is match('oci://'))
+  delegate_to: localhost
+  run_once: true
+  register: _helm_install_local
   changed_when: false

@@ -83,8 +83,23 @@ suc_service_account: "system-upgrade:system-upgrade"
 deploy_cluster_upgrade_controller: true
 
 # cluster-upgrade-controller Helm chart coordinates.
+#
+# Default points at the chart tasks/fetch-cluster-upgrade-controller-chart-tasks.yml
+# pulls down from a cluster node's /usr/share/mke-controllers/manifests/ (the
+# exact chart bootc-mirantis staged into the image at MKE_UPGRADE_CONTROLLER_VERSION
+# build time). Using the node-fetched chart means the installed controller
+# version always matches what is actually cached on the nodes, with no
+# separate version fact in Ansible that could drift from it — and no
+# dependency on registry.mirantis.com being reachable.
+#
+# cluster_upgrade_controller_version is only consulted when
+# cluster_upgrade_controller_chart is an "oci://..." reference (see the
+# install task's oci-vs-local branch) — set the chart back to the OCI URL
+# to deliberately install a version other than the one preloaded on this
+# image build, or when mke-post-install-playbook.yml runs standalone from a
+# different playbook_dir than the one that ran mke-install-playbook.yml.
 cluster_upgrade_controller_release_name: "cluster-upgrade-controller"
-cluster_upgrade_controller_chart: "oci://registry.mirantis.com/cluster-upgrade-controller/charts/cluster-upgrade-controller"
+cluster_upgrade_controller_chart: "{{ playbook_dir }}/mke-bundle/cluster-upgrade-controller-chart"
 cluster_upgrade_controller_version: "0.1.3"
 cluster_upgrade_controller_namespace: "mke"
 
