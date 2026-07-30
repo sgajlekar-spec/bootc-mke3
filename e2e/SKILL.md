@@ -29,9 +29,11 @@ target is pinned **by digest** parsed from the N release notes.
 
 ## Prerequisites
 
-- AWS access. Default profile `docker-testing-533267045383` (account
-  `533267045383`, region `us-east-2` — where the dev AMIs live).
-  `aws sso login --profile <profile>` if the session expired.
+- AWS access via **either** an SSO profile (`AWS_PROFILE`, e.g.
+  `docker-testing-533267045383`) **or** ambient env credentials
+  (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`).
+  Dev AMIs live in account `533267045383`, region `us-east-2`.
+- Scripts target `bash` 3.2+ and BSD userland, so they run on macOS as-is.
 - CLIs: `aws`, `gh`, `jq`, `terraform`, `ansible-playbook`, `kubectl`, `curl`,
   `unzip`, `ssh-keygen`.
 - Local checkouts of `bootc-mke3` (this repo) and `bootc-mirantis`.
@@ -49,7 +51,8 @@ CLUSTER_NAME=<name> ./90-teardown.sh
 Or step by step (each is resumable via the run state file):
 
 ```bash
-./00-deps.sh        # discover N/N-1, AMI for N-1, OCI digest for N; check AWS
+./00-deps.sh        # check CLIs + AWS access
+./01-discover.sh    # discover N/N-1, AMI for N-1, OCI digest for N
 ./10-provision.sh   # terraform apply -> EC2 cluster + ansible inventory
 ./20-install.sh     # ansible install (+ post-install: SUC + upgrade controller)
 ./30-join.sh        # no-touch add a worker nodegroup; confirm it joins
@@ -66,11 +69,11 @@ working copy + state), `ssh/` (generated keypair), `inventory.yaml`,
 
 | Var | Default | Purpose |
 |---|---|---|
-| `AWS_PROFILE` | `docker-testing-533267045383` | AWS SSO profile |
+| `AWS_PROFILE` | _(unset)_ | AWS SSO profile; omit to use ambient `AWS_*` env creds |
 | `AWS_REGION` | `us-east-2` | region of the dev AMIs |
 | `CLUSTER_NAME` | `bootc-e2e-<UTC ts>` | resource name prefix / run id |
 | `MANAGER_COUNT` / `WORKER_COUNT` | `1` / `1` | initial cluster shape |
-| `JOIN_WORKER_COUNT` | `1` | extra workers added no-touch (step 3) |
+| `JOIN_WORKER_COUNT` | `1` | extra workers added no-touch (step 4) |
 | `MANAGER_TYPE` / `WORKER_TYPE` | `m6a.2xlarge` / `t3.xlarge` | instance types |
 | `MKE_USER` / `MKE_PASS` | `admin` / `password` | install-time MKE admin creds |
 | `DISABLE_SSHD_AFTER_INSTALL` | `false` | `true` mirrors prod hardening |

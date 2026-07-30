@@ -7,7 +7,7 @@ here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"; . "$here/tf-lib.sh"
 state_load
 [ "${INSTALLED:-0}" = "1" ] || die "run 20-install.sh first"
 
-log "Step 3: no-touch join of $JOIN_WORKER_COUNT worker(s)"
+log "Step 4: no-touch join of $JOIN_WORKER_COUNT worker(s)"
 mke_bundle_ready "$MKE_URL" 120 || die "MKE bundle unavailable"
 
 # --- baseline worker count ----------------------------------------------------
@@ -42,4 +42,4 @@ done
 mke_docker_api "$MKE_URL" /nodes | jq -r '.[] | "\(.Description.Hostname)\t\(.Spec.Role)\t\(.Status.State)"'
 warn "reminder: rotate the worker join token after the batch — 'docker swarm join-token --rotate worker' (see runbook)"
 state_set JOINED 1
-ok "Step 3 complete"
+ok "Step 4 complete"

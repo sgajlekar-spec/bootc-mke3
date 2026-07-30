@@ -8,7 +8,10 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration (override via environment before invoking any step)
 # ---------------------------------------------------------------------------
-: "${AWS_PROFILE:=docker-testing-533267045383}"
+# AWS auth: either set AWS_PROFILE, or provide standard AWS_* env vars
+# (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN). Leave
+# AWS_PROFILE unset to use ambient env credentials.
+: "${AWS_PROFILE:=}"
 : "${AWS_REGION:=us-east-2}"          # region where the dev bootc AMIs are registered
 : "${CLUSTER_NAME:=bootc-e2e-$(date -u +%Y%m%d-%H%M)}"
 : "${BOOTC_MKE3_DIR:=$HOME/Documents/Mirantis/repos/bootc-mke3-PRODENG-3608}"
@@ -35,7 +38,8 @@ set -euo pipefail
 : "${DISABLE_SSHD_AFTER_INSTALL:=false}"
 : "${REVOKE_SUDO_AFTER_INSTALL:=false}"
 
-export AWS_PROFILE AWS_REGION
+export AWS_REGION
+if [ -n "${AWS_PROFILE:-}" ]; then export AWS_PROFILE; fi
 
 STATE="$RUNDIR/state.env"
 TFDIR="$RUNDIR/tf"

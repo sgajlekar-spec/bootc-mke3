@@ -8,9 +8,11 @@ state_load
 [ -s "$INVENTORY" ] || die "run 10-provision.sh first (no inventory)"
 
 SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10)
-mapfile -t HOSTS < <(grep -oE 'ansible_host:[[:space:]]*"?[0-9.]+' "$INVENTORY" | grep -oE '[0-9.]+$' | sort -u)
+HOSTS=()
+while IFS= read -r ip; do [ -n "$ip" ] && HOSTS+=("$ip"); done < <(
+  sed -nE 's/.*"?ansible_host"?:[[:space:]]*"?([0-9.]+).*/\1/p' "$INVENTORY" | sort -u)
 [ "${#HOSTS[@]}" -gt 0 ] || die "no ansible_host entries in inventory"
-log "Step 2: install MKE on ${#HOSTS[@]} host(s): ${HOSTS[*]}"
+log "Step 3: install MKE on ${#HOSTS[@]} host(s): ${HOSTS[*]}"
 
 # --- wait for SSH (cloud-init finishes provisioning cloud-user) ---------------
 for h in "${HOSTS[@]}"; do
@@ -58,4 +60,4 @@ mke_docker_api "$MKE_URL" /nodes | jq -r '.[] | "\(.Description.Hostname)\t\(.Sp
 exp=$(( MANAGER_COUNT + WORKER_COUNT ))
 [ "${node_total:-0}" -ge "$exp" ] || warn "expected >= $exp k8s nodes, saw ${node_total:-0}"
 state_set INSTALLED 1
-ok "Step 2 complete — cluster installed (MKE $ver)"
+ok "Step 3 complete — cluster installed (MKE $ver)"
