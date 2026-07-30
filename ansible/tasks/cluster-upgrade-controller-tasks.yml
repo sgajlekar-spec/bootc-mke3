@@ -31,6 +31,7 @@
 # Ref: https://github.com/rancher/system-upgrade-controller
 
 - ansible.builtin.include_tasks: tasks/mke-client-bundle-tasks.yml
+  when: deploy_suc | bool or deploy_cluster_upgrade_controller | bool
 
 - name: Deploy System Upgrade Controller (SUC)
   ansible.builtin.command: >-

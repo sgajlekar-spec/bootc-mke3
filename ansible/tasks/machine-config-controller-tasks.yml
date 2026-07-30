@@ -20,6 +20,7 @@
 # Ref: https://github.com/Mirantis/machine-config-controller
 
 - ansible.builtin.include_tasks: tasks/mke-client-bundle-tasks.yml
+  when: deploy_machine_config_controller | bool
 
 - name: Install machine-config-controller via Helm
   ansible.builtin.command:
