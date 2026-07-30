@@ -4,6 +4,13 @@
 # with the cluster exclusively through the MKE REST API and the Kubernetes API.
 # This playbook can therefore be run independently after SSH has been disabled.
 #
+# Caveat: suc_crd_manifest_src/suc_controller_manifest_src (vars/common-vars.yml)
+# default to files fetched from a cluster node during mke-install-playbook.yml
+# and left on this controller under playbook_dir/mke-bundle/. If running this
+# playbook standalone from a different controller/directory than the one that
+# ran install, those defaults will not resolve — override both vars to a URL
+# or a path reachable from wherever this actually runs.
+#
 # Usage:
 #   ansible-playbook mke-post-install-playbook.yml
 #

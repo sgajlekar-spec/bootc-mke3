@@ -61,9 +61,16 @@ deploy_suc: true
 # actually cached on the nodes, with no separate version fact in Ansible
 # that could drift from it and break air-gapped installs.
 #
-# Override to a URL or a different local/mirrored copy if you deliberately
-# want a SUC version other than the one preloaded on this image build
-# (accepts the tradeoff of an online pull, or air-gap accordingly).
+# Override to a URL or a different local/mirrored copy in two cases:
+#   1. You deliberately want a SUC version other than the one preloaded on
+#      this image build (accepts the tradeoff of an online pull, or air-gap
+#      it yourself).
+#   2. mke-post-install-playbook.yml is being run standalone/disconnected
+#      from mke-install-playbook.yml (its own header documents this as a
+#      supported flow) — the node-fetched defaults above only exist on the
+#      controller that ran mke-install-playbook.yml in the same
+#      playbook_dir. Point these at a URL or a path reachable from
+#      wherever post-install actually runs.
 suc_crd_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller-crd.yaml"
 suc_controller_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller.yaml"
 
