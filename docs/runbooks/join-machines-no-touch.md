@@ -51,7 +51,11 @@ SWARM_TOKEN=SWMTKN-1-<your-worker-token>
 SWARM_MANAGER=10.0.0.10:2377
 ```
 
-#### Cloud (cloud-init user-data — token never persists)
+#### Cloud (cloud-init user-data — tmpfs delivery)
+
+The credential file itself is written to tmpfs and never touches disk. Note
+that cloud-init independently caches the raw user-data under `/var/lib/cloud`;
+that cache is scrubbed automatically after a successful join.
 
 Pass as instance user-data (e.g. `aws ec2 run-instances --user-data file://...`):
 

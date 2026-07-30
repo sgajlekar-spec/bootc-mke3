@@ -39,8 +39,9 @@ which:
    3. **persistent file** — `/etc/mke3/swarm-join.env`. Intended for
       kickstart-provisioned bare metal; shredded after a confirmed join.
 3. **Waits for Docker** to become healthy (up to 300 s by default).
-4. **Joins the swarm**: `docker swarm join --token <token> <manager>:2377`,
-   retrying up to 5 times at 10 s intervals.
+4. **Joins the swarm**: `docker swarm join --token <token> <SWARM_MANAGER>`
+   (the value already carries the `host:2377` join address), retrying up to 5
+   times at 10 s intervals.
 5. **Cleans up** on success: shreds the persistent `/etc` file (if that was the
    source), scrubs any copy of the credential that cloud-init cached under
    `/var/lib/cloud` (cloud-init persists raw user-data regardless of which

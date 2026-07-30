@@ -30,12 +30,12 @@ authenticated and authorized as the MKE user that downloaded the bundle.
 ### Option 2 — Download the bundle via the API
 
 ```sh
-MKE_URL=<mke-host-or-ip>          # no scheme
-MKE_USER=admin
-MKE_PASS=<password>
+export MKE_URL=<mke-host-or-ip>          # no scheme
+export MKE_USER=admin
+export MKE_PASS=<password>
 
 # 1. Authenticate — returns a bearer token
-TOKEN=$(curl -sk -X POST "https://${MKE_URL}/auth/login" \
+export TOKEN=$(curl -sk -X POST "https://${MKE_URL}/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"${MKE_USER}\",\"password\":\"${MKE_PASS}\"}" | jq -r .auth_token)
 
@@ -86,9 +86,12 @@ unset DOCKER_HOST DOCKER_TLS_VERIFY DOCKER_CERT_PATH
 
 ### Does the bundle expire?
 
-The bundle's certificates are tied to the MKE user and remain valid until the
-user or the bundle is revoked in MKE (My Profile → Client Bundles), or the
-cluster CA is rotated. Revoke bundles for departed users.
+Since MKE 3.9.0 client bundle expiration is configurable — an admin can set a
+maximum lifetime, after which the bundle's certificates stop working. See
+[client bundle expiration](https://docs.mirantis.com/mke/3.9/ops/access-cluster/client-bundle/client-bundle-expiration.html).
+Independently of expiration, a bundle remains tied to its MKE user and can be
+revoked at any time (My Profile → Client Bundles); a cluster CA rotation also
+invalidates it. Revoke bundles for departed users.
 
 ### Do I need SSH to any cluster machine?
 
