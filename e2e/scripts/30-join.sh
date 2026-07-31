@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# 30-join.sh — Step 3: add workers via the image's no-touch first-boot join.
+# 30-join.sh — Step 4: add workers via the image's no-touch first-boot join.
 # Retrieves the worker join token + manager advertise address over the MKE
 # client bundle (no SSH), adds a "join" nodegroup to terraform carrying the
 # token in cloud-init user_data (tmpfs), applies, and confirms the workers join.
 here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"; . "$here/tf-lib.sh"
+step_begin "30-join"
 state_load
 [ "${INSTALLED:-0}" = "1" ] || die "run 20-install.sh first"
 

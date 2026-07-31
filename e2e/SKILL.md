@@ -60,10 +60,25 @@ Or step by step (each is resumable via the run state file):
 ./90-teardown.sh    # terraform destroy
 ```
 
+## Tracking progress and debugging
+
+Every step self-logs to `$RUNDIR/logs/<step>.log` and records
+`START`/`PASS`/`FAIL` events to `$RUNDIR/timeline.tsv` — regardless of whether
+it's run directly, via `run-all.sh`, or backgrounded. **Don't tail a combined
+stream to figure out what's happening** — from another shell:
+
+```bash
+CLUSTER_NAME=<name> ./status.sh
+```
+
+prints a table of every phase (pending/running/passed/failed), when it last
+changed state, and its log path — and if a phase is currently running or the
+most recent one failed, tails the relevant log automatically.
+
 State and artifacts live under `$RUNDIR`
-(`~/.cache/bootc-mke3-e2e/<CLUSTER_NAME>/`): `state.env`, `tf/` (terraform
-working copy + state), `ssh/` (generated keypair), `inventory.yaml`,
-`mke-bundle/` (client bundle).
+(`~/.cache/bootc-mke3-e2e/<CLUSTER_NAME>/`): `state.env`, `timeline.tsv`,
+`logs/`, `tf/` (terraform working copy + state), `ssh/` (generated keypair),
+`inventory.yaml`, `mke-bundle/` (client bundle).
 
 ## Configuration (environment overrides)
 
@@ -79,6 +94,7 @@ working copy + state), `ssh/` (generated keypair), `inventory.yaml`,
 | `DISABLE_SSHD_AFTER_INSTALL` | `false` | `true` mirrors prod hardening |
 | `REVOKE_SUDO_AFTER_INSTALL` | `false` | `true` mirrors prod hardening |
 | `MKE3_UPGRADE_IMAGE` | `registry.mirantis.com/bootc-mke3/mke3-upgrade:latest` | CR `product.mke3.image` |
+| `CLUSTER_UPGRADE_CONTROLLER_VERSION` | _(unset = repo default)_ | override the Helm chart version installed for `cluster-upgrade-controller` (see gotcha below) |
 | `BOOTC_MKE3_DIR` / `BOOTC_MIRANTIS_DIR` | repo paths | source checkouts |
 
 ## How each step maps to the repos
@@ -126,5 +142,15 @@ keypair authorizes cloud-user (the module's internal keypair isn't exposed).
   pulled from `registry.mirantis.com`, the CR upgrade stalls — confirm registry
   access or override the image/chart vars.
 - Rotate the worker join token after a batch joins
-  (`docker swarm join-token --rotate worker`); step 3 only reminds.
+  (`docker swarm join-token --rotate worker`); step 4 only reminds.
+- **A rebuilt AMI preloading a newer controller image does NOT change what
+  gets installed.** `mke-install-tasks.yml`'s `helm upgrade --install
+  --version {{ cluster_upgrade_controller_version }}` always pulls that exact
+  chart version from the registry at install time — independent of the AMI.
+  This bit us for real testing PRODENG-3570's fix: rebuilding the AMI with
+  `MKE_UPGRADE_CONTROLLER_VERSION=0.1.4` baked in still installed chart 0.1.1
+  (the stale pin in `ansible/vars/common-vars.yml` on `main`) and reproduced
+  the exact same stall. Use `CLUSTER_UPGRADE_CONTROLLER_VERSION` to override
+  it explicitly; step 3 reports the actually-installed chart version right
+  after install so a mismatch is caught immediately, not 20 minutes later.
 - Teardown is manual by design (post-mortem on failure). Don't leave clusters up.

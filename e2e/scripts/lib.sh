@@ -38,6 +38,15 @@ set -euo pipefail
 : "${DISABLE_SSHD_AFTER_INSTALL:=false}"
 : "${REVOKE_SUDO_AFTER_INSTALL:=false}"
 
+# Override the Helm chart version installed for cluster-upgrade-controller.
+# Empty = use whatever ansible/vars/common-vars.yml pins on the checked-out
+# bootc-mke3 branch. NOTE: the OS image can preload a newer controller image
+# without this changing — mke-install-tasks.yml's `helm upgrade --install
+# --version {{ cluster_upgrade_controller_version }}` always pulls that exact
+# chart version from the registry at install time, independent of what's
+# baked into the AMI. Set this explicitly to test a specific controller fix.
+: "${CLUSTER_UPGRADE_CONTROLLER_VERSION:=}"
+
 export AWS_REGION
 if [ -n "${AWS_PROFILE:-}" ]; then export AWS_PROFILE; fi
 
@@ -56,6 +65,41 @@ warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31m[fail]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
+# Observability: per-phase timeline + per-step log files.
+# Call `step_begin "<step-id>"` (matching the script's own basename minus
+# .sh, e.g. "20-install") right after sourcing this file. It tees this
+# process's stdout+stderr to $RUNDIR/logs/<step-id>.log (so output is visible
+# live AND captured for later inspection regardless of how the step was
+# invoked — directly, via run-all.sh, or backgrounded), records a START
+# event, and installs an EXIT trap that records PASS/FAIL based on the exit
+# code — covering normal completion, `die`, and any `set -e` abort.
+# `status.sh` reads $RUNDIR/timeline.tsv to answer "what ran, what's running,
+# what failed" without tailing logs by hand.
+# ---------------------------------------------------------------------------
+TIMELINE="$RUNDIR/timeline.tsv"
+CURRENT_PHASE=""
+
+timeline_event() { # timeline_event <phase> <status> [message]
+  mkdir -p "$RUNDIR"
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$1" "$2" "${3:-}" >> "$TIMELINE"
+}
+
+_step_exit_trap() {
+  local ec=$?
+  [ -n "$CURRENT_PHASE" ] || return 0
+  if [ "$ec" -eq 0 ]; then timeline_event "$CURRENT_PHASE" PASS
+  else timeline_event "$CURRENT_PHASE" FAIL "exit=$ec"; fi
+}
+
+step_begin() { # step_begin <step-id>
+  CURRENT_PHASE="$1"
+  mkdir -p "$RUNDIR/logs"
+  exec > >(tee -a "$RUNDIR/logs/${CURRENT_PHASE}.log") 2>&1
+  trap _step_exit_trap EXIT
+  timeline_event "$CURRENT_PHASE" START
+}
+
+# ---------------------------------------------------------------------------
 # State file: chain values between steps (key=value lines)
 # ---------------------------------------------------------------------------
 state_init() { mkdir -p "$RUNDIR"; touch "$STATE"; }
@@ -67,7 +111,20 @@ state_set()  { # state_set KEY VALUE
   mv "$STATE.tmp" "$STATE"
 }
 state_get()  { [ -f "$STATE" ] && sed -n "s/^$1=//p" "$STATE" | tail -1; }
-state_load() { [ -f "$STATE" ] && set -a && . "$STATE" && set +a || true; }
+# Fills in vars discovered by earlier steps (AMI_ID, MKE_URL, N_VER, ...) but
+# NEVER overwrites a var already set in the invoking environment — an
+# explicit `VAR=x ./NN-step.sh` override always wins over whatever a prior
+# step persisted. (A plain `. "$STATE"` here would silently clobber runtime
+# overrides with stale state on every call — bit us for real testing a
+# BOOTC_MKE3_DIR override against an already-provisioned cluster.)
+state_load() {
+  [ -f "$STATE" ] || return 0
+  local k v
+  while IFS='=' read -r k v; do
+    [ -n "$k" ] || continue
+    [ -z "${!k:-}" ] && export "$k=$v"
+  done < "$STATE"
+}
 
 require() { command -v "$1" >/dev/null 2>&1 || die "missing required tool: $1"; }
 

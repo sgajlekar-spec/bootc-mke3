@@ -6,6 +6,7 @@
 # Controller cannot resolve the generated Plan (see PRODENG-3570 / controller
 # PR #28: mke3-verify-environment plans historically missed spec.version).
 here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"
+step_begin "40-upgrade"
 state_load
 [ "${INSTALLED:-0}" = "1" ] || die "run 20-install.sh first"
 mke_bundle_ready "$MKE_URL" 120 || die "MKE bundle unavailable"
@@ -37,6 +38,9 @@ spec:
   workerConcurrency: 3
 YAML
 log "applying ClusterUpgrade CR:"; cat "$CR" >&2
+# Delete any stuck prior object first — a spec-only re-apply doesn't reliably
+# re-drive a controller that's already parked in a terminal/stuck phase.
+kube delete clusterupgrade "$CU_NAME" --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1 || true
 kube apply -f "$CR" || die "kubectl apply of ClusterUpgrade failed"
 
 # Report System Upgrade Controller Plans that cannot resolve (missing

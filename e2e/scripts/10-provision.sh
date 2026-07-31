@@ -3,6 +3,7 @@
 # Uses the N-1 AMI discovered in 01-discover, renders per-nodegroup user_data
 # (cloud-user + SSH), applies, and writes the ansible inventory + mke_url.
 here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"; . "$here/tf-lib.sh"
+step_begin "10-provision"
 state_load
 [ -n "${AMI_ID:-}" ] || die "run 01-discover.sh first (AMI_ID unset)"
 

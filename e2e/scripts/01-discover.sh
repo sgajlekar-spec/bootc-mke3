@@ -6,6 +6,7 @@
 #   - persist the run configuration used by later steps
 # Requires: 00-deps.sh has run (AWS access confirmed). Idempotent.
 here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"
+step_begin "01-discover"
 state_load
 acct="$(state_get AWS_ACCOUNT)"; [ -n "$acct" ] || die "run 00-deps.sh first (AWS_ACCOUNT unset)"
 
@@ -59,6 +60,7 @@ log "ClusterUpgrade mke3 job image (override MKE3_UPGRADE_IMAGE if unresolved): 
 for k in CLUSTER_NAME AWS_REGION MANAGER_COUNT WORKER_COUNT JOIN_WORKER_COUNT \
          MANAGER_TYPE WORKER_TYPE VOLUME_SIZE MKE_USER MKE_PASS \
          DISABLE_SSHD_AFTER_INSTALL REVOKE_SUDO_AFTER_INSTALL \
+         CLUSTER_UPGRADE_CONTROLLER_VERSION \
          BOOTC_MKE3_DIR BOOTC_MIRANTIS_DIR; do
   state_set "$k" "${!k}"
 done

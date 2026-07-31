@@ -5,6 +5,7 @@
 # Discovery of release artifacts (AMI/OCI) is a separate step: 01-discover.sh.
 # Idempotent.
 here="$(cd "$(dirname "$0")" && pwd)"; . "$here/lib.sh"
+step_begin "00-deps"
 state_init
 
 log "Step 0: dependency check"
