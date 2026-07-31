@@ -12,6 +12,9 @@ For a use cases where cluster machines has access to the internet, official Mira
 
 For production-grade air-gapped clusters, users should have their own registry that can be accessed by the cluster machines. This registry should contain `bootc-mke3` OCI images with desired version of products. The way of obtaining the image can vary, but the most common way is to set up a mirroring from official Mirantis registry (registry.mirantis.com).
 
+> [!NOTE]
+> Jenkins `bootc-build` dev builds are published to `registry.ci.mirantis.com` — a separate dev/CI registry, distinct from the production `registry.mirantis.com` — which also allows anonymous pull. Anyone testing dev builds should pull from there rather than the production registry.
+
 ## Machines
 
 Cluster should consists of one or more compute machine nodes. In order to use `bootc-mke3`, machines should meet following requirements:
