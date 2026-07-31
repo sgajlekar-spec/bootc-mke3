@@ -52,7 +52,14 @@ ok "N OCI (upgrade OS image): $OCI_N_CLOUD"
 state_set OCI_N_CLOUD "$OCI_N_CLOUD"
 
 # --- mke3-upgrade job image referenced by the ClusterUpgrade CR ---------------
-: "${MKE3_UPGRADE_IMAGE:=registry.mirantis.com/bootc-mke3/mke3-upgrade:latest}"
+# Published under the cluster-upgrade-controller project (see that repo's
+# release.yml), NOT under bootc-mke3/ -- an earlier default pointed at
+# registry.mirantis.com/bootc-mke3/mke3-upgrade:latest, which does not exist
+# ("not found" ErrImagePull, confirmed live) and burned a full 4h upgrade
+# timeout before failing. Also already preloaded on nodes by mke-images.service
+# (same image bootc-mirantis's helpers/controllers target bakes in), so this
+# needs no network pull on a default install.
+: "${MKE3_UPGRADE_IMAGE:=registry.mirantis.com/cluster-upgrade-controller/mke3-upgrade:latest}"
 state_set MKE3_UPGRADE_IMAGE "$MKE3_UPGRADE_IMAGE"
 log "ClusterUpgrade mke3 job image (override MKE3_UPGRADE_IMAGE if unresolved): $MKE3_UPGRADE_IMAGE"
 
