@@ -5,6 +5,9 @@ Provision machines on AWS, using terraform.
 > [!IMPORTANT]
 > AWS-based provisioning is considered **dev/testing only**, and is not a production-grade `bootc-mke3` provisioning path. Because of that, the `bootc-mke3` AMI ID is not published through any automated channel (registry, platform lookup, etc.). To obtain a current AMI ID — and the AWS account that owns it — visit the `#bootc-internal` channel in the Mirantis Slack space and read the latest release message; it lists the current AMI ID(s) per region.
 
+> [!NOTE]
+> Alternatively, if you have access to the Jenkins `bootc-build` pipeline, the `bootc-ami` sub-build's console exposes `ARTIFACT_AMI_ID` via `buildVariables` for any build you can inspect (see `bootc-mirantis/AGENTS.md`), and that build's `BUILD_ENV` parameter indicates the owning AWS account. This gives a scriptable alternative to the Slack channel for discovering a current AMI ID and owning account.
+
 ## Requirements
 
 ### Prerequisites
