@@ -24,6 +24,9 @@ This calls the [`terraform-mirantis-provision-aws` `mke3` example](https://regis
 
 With `is_bootc_based = true` (the default in this folder), a small cloud-init payload configures the image's `cloud-user` with passwordless sudo and docker-group access using the generated SSH key, which is what the `bootc-mke3` ansible playbooks expect for [machine connection](../provisioning.md#machine-connection). This path does not use launchpad — MCR/MKE are baked into the `bootc-mke3` AMI, and the module's launchpad-oriented inputs/outputs are satisfied internally with placeholders and not exposed to `terraform.tfvars`.
 
+> [!WARNING]
+> The upstream module's default security group (name suffix `-permissive`) allows **all protocols and ports from `0.0.0.0/0`**, not just intra-VPC traffic. This is convenient for throwaway dev/test use but should be tightened before running anything longer-lived or exposed on this path.
+
 ### Variables
 
 To configure the stack, create a copy of [terraform.tfvars.example](../../terraform/aws/terraform.tfvars.example) in the same `terraform/aws` folder and name it `terraform.tfvars`.
