@@ -50,10 +50,29 @@ deploy_suc: true
 # SUC CRD and controller manifest sources, applied via `kubectl apply -f`.
 # Accepts a URL or a local file path resolved on the Ansible controller
 # (delegate_to: localhost) — use an absolute path or "{{ playbook_dir }}/..."
-# rather than a bare relative path. Override to a local/mirrored copy in
-# air-gapped environments where the controller cannot reach github.com.
-suc_crd_manifest_src: "https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml"
-suc_controller_manifest_src: "https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml"
+# rather than a bare relative path.
+#
+# Defaults point at the copies tasks/fetch-controller-manifests-tasks.yml
+# pulls down from a cluster node's /usr/share/mke-controllers/manifests/ (the
+# literal, unmodified upstream release assets bootc-mirantis staged into the
+# image at build time — not templates, the SUC image tag is already baked
+# into system-upgrade-controller.yaml's Deployment spec). Using the
+# node-fetched copy means the installed SUC version always matches what is
+# actually cached on the nodes, with no separate version fact in Ansible
+# that could drift from it and break air-gapped installs.
+#
+# Override to a URL or a different local/mirrored copy in two cases:
+#   1. You deliberately want a SUC version other than the one preloaded on
+#      this image build (accepts the tradeoff of an online pull, or air-gap
+#      it yourself).
+#   2. mke-post-install-playbook.yml is being run standalone/disconnected
+#      from mke-install-playbook.yml (its own header documents this as a
+#      supported flow) — the node-fetched defaults above only exist on the
+#      controller that ran mke-install-playbook.yml in the same
+#      playbook_dir. Point these at a URL or a path reachable from
+#      wherever post-install actually runs.
+suc_crd_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller-crd.yaml"
+suc_controller_manifest_src: "{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller.yaml"
 
 # Service account granted the 'privileged' pod-security attribute in the MKE
 # UCPAuthorization allowlist when deploy_suc is true. Format: namespace:name.
@@ -64,7 +83,31 @@ suc_service_account: "system-upgrade:system-upgrade"
 deploy_cluster_upgrade_controller: true
 
 # cluster-upgrade-controller Helm chart coordinates.
+#
+# Default points at the chart tasks/fetch-cluster-upgrade-controller-chart-tasks.yml
+# pulls down from a cluster node's /usr/share/mke-controllers/manifests/ (the
+# exact chart bootc-mirantis staged into the image at MKE_UPGRADE_CONTROLLER_VERSION
+# build time). Using the node-fetched chart means the installed controller
+# version always matches what is actually cached on the nodes, with no
+# separate version fact in Ansible that could drift from it — and no
+# dependency on registry.mirantis.com being reachable.
+#
+# cluster_upgrade_controller_version is only consulted when
+# cluster_upgrade_controller_chart is an "oci://..." reference (see the
+# install task's oci-vs-local branch) — set the chart back to the OCI URL
+# to deliberately install a version other than the one preloaded on this
+# image build, or when mke-post-install-playbook.yml runs standalone from a
+# different playbook_dir than the one that ran mke-install-playbook.yml.
 cluster_upgrade_controller_release_name: "cluster-upgrade-controller"
-cluster_upgrade_controller_chart: "oci://registry.mirantis.com/cluster-upgrade-controller/charts/cluster-upgrade-controller"
-cluster_upgrade_controller_version: "0.1.1"
+cluster_upgrade_controller_chart: "{{ playbook_dir }}/mke-bundle/cluster-upgrade-controller-chart"
+cluster_upgrade_controller_version: "0.1.3"
 cluster_upgrade_controller_namespace: "mke"
+
+# When true, the machine-config-controller is installed on the cluster.
+deploy_machine_config_controller: true
+
+# machine-config-controller Helm chart coordinates.
+machine_config_controller_release_name: "machine-config-controller"
+machine_config_controller_chart: "oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller"
+machine_config_controller_version: "0.1.4"
+machine_config_controller_namespace: "mke"

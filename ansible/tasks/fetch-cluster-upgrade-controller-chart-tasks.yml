@@ -1,0 +1,58 @@
+# Fetches the cluster-upgrade-controller Helm chart that bootc-mirantis
+# stages into the bootc-mke3 image at build time, from a cluster node's
+# on-disk copy down to the Ansible controller — the same air-gap/drift
+# rationale as tasks/fetch-controller-manifests-tasks.yml (which does this
+# for SUC's manifests), applied to the controller's own chart.
+#
+# `ansible.builtin.fetch` can't pull a directory, so the chart is tarred on
+# the node, fetched as a single file, then untarred locally. Using the
+# node-fetched chart means the installed controller version always matches
+# what bootc-mirantis actually preloaded (MKE_UPGRADE_CONTROLLER_VERSION at
+# image-build time) — no separate version fact in Ansible that can drift
+# from it, and no dependency on registry.mirantis.com being reachable.
+#
+# Must run while SSH access to the nodes still exists — i.e. from a play
+# with hosts: managers, before the post-install hardening step revokes it.
+# All nodes come from the same image build, so any one manager is
+# representative (run_once: true).
+#
+# Required vars (inherited from the enclosing play):
+#   deploy_cluster_upgrade_controller – when true, the chart is fetched
+
+- name: Tar the staged cluster-upgrade-controller chart on the node
+  ansible.builtin.command:
+    argv:
+      - tar
+      - czf
+      - /tmp/cluster-upgrade-controller-chart.tgz
+      - -C
+      - /usr/share/mke-controllers/manifests
+      - cluster-upgrade-controller-chart
+  when: deploy_cluster_upgrade_controller | bool
+  run_once: true
+  changed_when: false
+
+- name: Fetch the tarred chart to the Ansible controller
+  ansible.builtin.fetch:
+    src: /tmp/cluster-upgrade-controller-chart.tgz
+    dest: "{{ playbook_dir }}/mke-bundle/cluster-upgrade-controller-chart.tgz"
+    flat: true
+  when: deploy_cluster_upgrade_controller | bool
+  run_once: true
+
+- name: Remove the temporary tarball from the node
+  ansible.builtin.file:
+    path: /tmp/cluster-upgrade-controller-chart.tgz
+    state: absent
+  when: deploy_cluster_upgrade_controller | bool
+  run_once: true
+  changed_when: false
+
+- name: Extract the chart locally on the Ansible controller
+  ansible.builtin.unarchive:
+    src: "{{ playbook_dir }}/mke-bundle/cluster-upgrade-controller-chart.tgz"
+    dest: "{{ playbook_dir }}/mke-bundle/"
+    remote_src: false
+  delegate_to: localhost
+  run_once: true
+  when: deploy_cluster_upgrade_controller | bool

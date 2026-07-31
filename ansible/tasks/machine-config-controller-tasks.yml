@@ -1,0 +1,46 @@
+# Installs the machine-config-controller using the MKE3 client bundle
+# kubeconfig.
+#
+# Steps:
+#   1. Fetch and extract the client bundle (kube.yml is the kubeconfig).
+#   2. Install machine-config-controller (controller + node agent) via Helm
+#      chart when deploy_machine_config_controller is true.
+#
+# Required vars (inherited from the enclosing play):
+#   admin_user  – MKE administrator username       (from vars/mke-creds.yml)
+#   admin_pass  – MKE administrator password       (from vars/mke-creds.yml)
+#   mke_url     – MKE load-balancer IP/hostname    (from inventory all.vars)
+#   bundle_dest – local directory for the bundle   (default: playbook_dir/mke-bundle)
+#   deploy_machine_config_controller       – when true, installs machine-config-controller (from vars/common-vars.yml)
+#   machine_config_controller_release_name – Helm release name
+#   machine_config_controller_chart        – OCI chart URL
+#   machine_config_controller_version      – chart version
+#   machine_config_controller_namespace    – target namespace (created if absent)
+#
+# Ref: https://github.com/Mirantis/machine-config-controller
+
+- ansible.builtin.include_tasks: tasks/mke-client-bundle-tasks.yml
+  when: deploy_machine_config_controller | bool
+
+- name: Install machine-config-controller via Helm
+  ansible.builtin.command:
+    argv:
+      - helm
+      - upgrade
+      - --install
+      - "{{ machine_config_controller_release_name }}"
+      - "{{ machine_config_controller_chart }}"
+      - --version
+      - "{{ machine_config_controller_version }}"
+      - --namespace
+      - "{{ machine_config_controller_namespace }}"
+      - --create-namespace
+      - --kubeconfig
+      - "{{ bundle_dest }}/kube.yml"
+  when: deploy_machine_config_controller | bool
+  delegate_to: localhost
+  run_once: true
+  register: _helm_install
+  # helm upgrade --install always reports "upgraded" even when nothing changed;
+  # there is no reliable stdout signal for a true no-op.
+  changed_when: false

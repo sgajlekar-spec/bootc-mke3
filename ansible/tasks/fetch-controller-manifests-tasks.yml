@@ -1,0 +1,30 @@
+# Fetches the System Upgrade Controller (SUC) manifests that bootc-mirantis
+# stages into the bootc-mke3 image at build time, from a cluster node's
+# on-disk copy down to the Ansible controller.
+#
+# These are the literal, unmodified upstream release assets for whatever
+# SUC_VERSION that image build pinned (see /usr/share/mke-controllers/
+# versions.txt on a node) — plain Kubernetes YAML with the controller image
+# tag already baked into the manifest itself, not a template. Fetching them
+# here means suc_crd_manifest_src/suc_controller_manifest_src default to
+# exactly what is already cached on the nodes, with nothing in Ansible
+# tracking the SUC version as a separate fact that could drift from it.
+#
+# Must run while SSH access to the nodes still exists — i.e. from a play
+# with hosts: managers, before the post-install hardening step revokes it.
+# All nodes in a cluster come from the same image build, so any one manager
+# is representative (run_once: true).
+#
+# Required vars (inherited from the enclosing play):
+#   deploy_suc – when true, the manifests are fetched (from vars/common-vars.yml)
+
+- name: Fetch pinned SUC manifests staged in the bootc-mke3 image
+  ansible.builtin.fetch:
+    src: "/usr/share/mke-controllers/manifests/{{ item }}"
+    dest: "{{ playbook_dir }}/mke-bundle/controller-manifests/{{ item }}"
+    flat: true
+  loop:
+    - system-upgrade-controller-crd.yaml
+    - system-upgrade-controller.yaml
+  when: deploy_suc | bool
+  run_once: true
