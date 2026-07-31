@@ -93,7 +93,7 @@ State and artifacts live under `$RUNDIR`
 | `MKE_USER` / `MKE_PASS` | `admin` / `password` | install-time MKE admin creds |
 | `DISABLE_SSHD_AFTER_INSTALL` | `false` | `true` mirrors prod hardening |
 | `REVOKE_SUDO_AFTER_INSTALL` | `false` | `true` mirrors prod hardening |
-| `MKE3_UPGRADE_IMAGE` | `registry.mirantis.com/bootc-mke3/mke3-upgrade:latest` | CR `product.mke3.image` |
+| `MKE3_UPGRADE_IMAGE` | `registry.mirantis.com/cluster-upgrade-controller/mke3-upgrade:latest` | CR `product.mke3.image` |
 | `CLUSTER_UPGRADE_CONTROLLER_VERSION` | _(unset = repo default)_ | override the Helm chart version installed for `cluster-upgrade-controller` (see gotcha below) |
 | `BOOTC_MKE3_DIR` / `BOOTC_MIRANTIS_DIR` | repo paths | source checkouts |
 
@@ -138,19 +138,35 @@ keypair authorizes cloud-user (the module's internal keypair isn't exposed).
 
 - `bootc-test` (install e2e) had no green run for ~a month before this skill;
   treat a first failure as signal, not noise.
-- If `MKE3_UPGRADE_IMAGE` / the `cluster-upgrade-controller` chart can't be
-  pulled from `registry.mirantis.com`, the CR upgrade stalls — confirm registry
-  access or override the image/chart vars.
+- **`cluster-upgrade-controller`'s chart is node-fetched by default** (bootc-mke3
+  PR #23, merged) — `helm upgrade --install` no longer pulls from the registry
+  unless `cluster_upgrade_controller_chart` is explicitly set back to an
+  `oci://` URL. Rebuilding an AMI with a newer `MKE_UPGRADE_CONTROLLER_VERSION`
+  now actually changes what gets installed. Before this merged, a rebuilt AMI
+  silently kept installing whatever version was pinned in `common-vars.yml`,
+  independent of the AMI — bit us for real testing PRODENG-3570's fix. Use
+  `CLUSTER_UPGRADE_CONTROLLER_VERSION` to force the OCI-registry path instead.
+  Step 3 reports the actually-installed chart version right after install so
+  a mismatch is caught immediately, not 20 minutes later.
+- **`cluster-upgrade-controller` v0.1.4's chart shipped the wrong default
+  image tag** (`values.yaml` said `0.1.3`; fix is cluster-upgrade-controller
+  PR #30 / a future `v0.1.5+` release, not yet cut as of this writing) — a
+  default install of chart 0.1.4 deploys the *unfixed* 0.1.3 controller
+  binary and reproduces PRODENG-3570's stall despite the chart label saying
+  0.1.4. Confirm the running pod's actual image
+  (`kubectl -n mke get deploy cluster-upgrade-controller -o
+  jsonpath='{.spec.template.spec.containers[0].image}'`), not just the Helm
+  release's chart version.
+- **`MKE3_UPGRADE_IMAGE` default was wrong in earlier versions of this
+  skill** — `registry.mirantis.com/bootc-mke3/mke3-upgrade:latest` does not
+  exist (confirmed live: kubelet `ErrImagePull: ... not found`). The
+  mke3-upgrade job image is published under the **cluster-upgrade-controller**
+  registry project, matching that repo's own release pipeline:
+  `registry.mirantis.com/cluster-upgrade-controller/mke3-upgrade:<version>`
+  (also preloaded on nodes by `mke-images.service`, no network pull needed on
+  a default install). Getting this wrong doesn't fail fast — SUC creates the
+  Plan/Job fine, then burns the *entire* `ClusterUpgrade` timeout (default
+  4h) retrying the pull before the CR reports `Failed`.
 - Rotate the worker join token after a batch joins
   (`docker swarm join-token --rotate worker`); step 4 only reminds.
-- **A rebuilt AMI preloading a newer controller image does NOT change what
-  gets installed.** `mke-install-tasks.yml`'s `helm upgrade --install
-  --version {{ cluster_upgrade_controller_version }}` always pulls that exact
-  chart version from the registry at install time — independent of the AMI.
-  This bit us for real testing PRODENG-3570's fix: rebuilding the AMI with
-  `MKE_UPGRADE_CONTROLLER_VERSION=0.1.4` baked in still installed chart 0.1.1
-  (the stale pin in `ansible/vars/common-vars.yml` on `main`) and reproduced
-  the exact same stall. Use `CLUSTER_UPGRADE_CONTROLLER_VERSION` to override
-  it explicitly; step 3 reports the actually-installed chart version right
-  after install so a mismatch is caught immediately, not 20 minutes later.
 - Teardown is manual by design (post-mortem on failure). Don't leave clusters up.
