@@ -33,6 +33,10 @@ Prerequisites for the installation can be found in the [Provisioning](#provision
 
 To perform the installation, please see [installation runbook](docs/runbooks/install-bootc-mke3.md).
 
+### Post-install controllers
+
+A default install also deploys the System Upgrade Controller, `cluster-upgrade-controller`, and `machine-config-controller` to the cluster, and hardens SSH/sudo access on every host. See the [controllers runbook](docs/runbooks/install-controllers.md) for what gets deployed and how to verify it, and the [machine configuration runbook](docs/runbooks/machine-config-operations.md) for applying DNS/NTP/kernel/reboot changes cluster-wide via `machine-config-controller`.
+
 ## Upgrade
 
 To perform an upgrade , please see [upgrade runbook](docs/runbooks/upgrade-bootc-mke3.md).
