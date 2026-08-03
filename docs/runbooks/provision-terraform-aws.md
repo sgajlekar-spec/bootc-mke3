@@ -3,10 +3,7 @@
 Provision machines on AWS, using terraform.
 
 > [!IMPORTANT]
-> AWS-based provisioning is considered **dev/testing only**, and is not a production-grade `bootc-mke3` provisioning path. Because of that, the `bootc-mke3` AMI ID is not published through any automated channel (registry, platform lookup, etc.). To obtain a current AMI ID — and the AWS account that owns it — visit the `#bootc-internal` channel in the Mirantis Slack space and read the latest release message; it lists the current AMI ID(s) per region.
-
-> [!NOTE]
-> Alternatively, if you have access to the Jenkins `bootc-build` pipeline, the `bootc-ami` sub-build's console exposes `ARTIFACT_AMI_ID` via `buildVariables` for any build you can inspect (see `bootc-mirantis/AGENTS.md`), and that build's `BUILD_ENV` parameter indicates the owning AWS account. This gives a scriptable alternative to the Slack channel for discovering a current AMI ID and owning account.
+> AWS-based provisioning is considered **dev/testing only**, and is not a production-grade `bootc-mke3` provisioning path. Mirantis maintains AWS AMIs for `bootc-mke3` builds for this purpose, but AMI IDs are not published in this document and are not publicly announced. Contact your Mirantis representative to obtain a current AMI ID and the AWS account that owns it.
 
 ## Requirements
 
@@ -16,7 +13,7 @@ In order to proceed with this guide:
 
 1. Terraform >= 1.5 installed locally.
 2. AWS credentials configured (`AWS_PROFILE` or `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`) for a user/role that can create VPCs, subnets, security groups, load balancers, key pairs, and EC2 instances.
-3. A current `bootc-mke3` AMI ID and its owning AWS account — obtained from the `#bootc-internal` Slack channel as described above.
+3. A current `bootc-mke3` AMI ID and its owning AWS account — obtained as described above.
 
 ### What gets provisioned
 
@@ -34,7 +31,7 @@ To configure the stack, create a copy of [terraform.tfvars.example](../../terraf
 Key things to set:
 
 1. `name` — used to label/prefix all created resources.
-2. `nodegroups.*.ami_id` and `nodegroups.*.ami_owner` — the `bootc-mke3` AMI ID and owning AWS account, from `#bootc-internal` on Slack.
+2. `nodegroups.*.ami_id` and `nodegroups.*.ami_owner` — the `bootc-mke3` AMI ID and owning AWS account (see prerequisites above).
 3. `nodegroups.*.ssh_user` — `cloud-user` for `bootc-mke3` images.
 4. `subnets` / `network` — adjust CIDRs if the defaults conflict with existing AWS resources.
 

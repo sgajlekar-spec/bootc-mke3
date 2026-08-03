@@ -12,9 +12,6 @@ For a use cases where cluster machines has access to the internet, official Mira
 
 For production-grade air-gapped clusters, users should have their own registry that can be accessed by the cluster machines. This registry should contain `bootc-mke3` OCI images with desired version of products. The way of obtaining the image can vary, but the most common way is to set up a mirroring from official Mirantis registry (registry.mirantis.com).
 
-> [!NOTE]
-> Jenkins `bootc-build` dev builds are published to `registry.ci.mirantis.com` — a separate dev/CI registry, distinct from the production `registry.mirantis.com` — which also allows anonymous pull. Anyone testing dev builds should pull from there rather than the production registry.
-
 ## Machines
 
 Cluster should consists of one or more compute machine nodes. In order to use `bootc-mke3`, machines should meet following requirements:
@@ -50,7 +47,7 @@ This `bootc-mke3` tooling includes a number of terraform modules that can provis
 - **AWS.** Full guide on how to provision `bootc-mke3` cluster on AWS can be found in [this document](runbooks/provision-terraform-aws.md)
 
 > [!IMPORTANT]
-> AWS-based provisioning is considered **dev/testing only**, not a production-grade `bootc-mke3` provisioning path. Because of that, the AMI ID required to provision `bootc-mke3` nodes on AWS is not published through any automated channel. To obtain a current AMI ID, visit the `#bootc-internal` channel in the Mirantis Slack space and find the latest release message — it lists the current AMI ID(s), and owning AWS account, per region.
+> AWS-based provisioning is considered **dev/testing only**, not a production-grade `bootc-mke3` provisioning path. Mirantis maintains AWS AMIs for `bootc-mke3` builds for this purpose, but AMI IDs are not published in this document and are not publicly announced. Contact your Mirantis representative to obtain a current AMI ID and its owning AWS account for your region.
 
 ### Manual provisioning (roll your own)
 
