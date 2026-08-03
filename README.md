@@ -51,4 +51,4 @@ Command-line access (`kubectl` and `docker`/Swarm) goes through the MKE client b
 
 ## Troubleshooting
 
-If you encounter issues, file an issue, or talk to us on the #prod-eng or #mkex-internal channel on the Mirantis Slack server.
+If you encounter issues, please file an issue on this repository or contact your Mirantis representative.
