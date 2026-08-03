@@ -2,7 +2,7 @@
 
 Instructions and prerequisites on how to properly install and upgrade bootc-mke3 in an air-gapped environment.
 
-See also: [Install bootc-mke3](install-bootc-mke3.md), [Upgrade bootc-mke3](upgrade-bootc-mke3.md).
+See also: [Install bootc-mke3](install-bootc-mke3.md), [Upgrade bootc-mke3](upgrade-with-controller.md) (or the [Ansible exception path](upgrade-with-ansible.md)).
 
 ## Prerequisites
 

@@ -1,12 +1,24 @@
-# Upgrade bootc-mke3
+# Upgrade bootc-mke3 via Ansible
 
-This guide explains how to upgrade an existing Mirantis Kubernetes Engine (MKE) cluster to the latest version or switch to a specific newer release.
+This guide explains how to upgrade an existing Mirantis Kubernetes Engine (MKE) cluster to the latest version or switch to a specific newer release, by running an Ansible playbook from an operator's workstation.
+
+> **This is a manual, Ansible-driven exception path.** It requires SSH and
+> sudo access to every cluster machine from the machine running the
+> playbook. The canonical way to upgrade a `bootc-mke3` cluster is the
+> kube-native `ClusterUpgrade` custom resource, handled by
+> `cluster-upgrade-controller` (installed by default) — see
+> [upgrade via the ClusterUpgrade CR](upgrade-with-controller.md), which
+> needs no SSH. Use this Ansible playbook only when the controller is
+> unavailable or disabled on the cluster, or when you specifically need
+> workstation-driven orchestration outside Kubernetes. Both paths run the
+> identical underlying `mirantis/ucp upgrade` checks and commands.
 
 ## Prerequisites
 
 1. Ansible installed on the machine running the upgrade.
 2. An Ansible inventory describing the cluster. See the [inventory description document](../ansible-inventory-input.md) for details.
 3. Cluster machines should have RO access to a OCI registry with new `bootc-mke3` version. See [this document](../provisioning.md#registry) for more information about registry requirement.
+4. **A manual MKE backup must already exist** before starting the upgrade. The pre-upgrade checks invoked by this playbook (`mirantis/ucp upgrade checks`) hard-require a backup to already be present, even though the automated backup step in this playbook runs *after* those checks. See the manual backup command in the [ClusterUpgrade CR runbook's prerequisites](upgrade-with-controller.md#prerequisites) — the same command applies here, independent of which upgrade mechanism you use.
 
 ## Procedure
 

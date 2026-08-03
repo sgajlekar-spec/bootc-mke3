@@ -39,7 +39,7 @@ A default install also deploys the System Upgrade Controller, `cluster-upgrade-c
 
 ## Upgrade
 
-To perform an upgrade , please see [upgrade runbook](docs/runbooks/upgrade-bootc-mke3.md).
+The canonical way to upgrade a `bootc-mke3` cluster is the kube-native `ClusterUpgrade` custom resource, handled by `cluster-upgrade-controller` (installed by default — see [Post-install controllers](#post-install-controllers)). See the [upgrade runbook](docs/runbooks/upgrade-with-controller.md). For clusters where the controller is unavailable or disabled, a manual Ansible-driven exception path exists — see the [Ansible upgrade runbook](docs/runbooks/upgrade-with-ansible.md).
 
 ## Adding machines (no-touch join)
 
