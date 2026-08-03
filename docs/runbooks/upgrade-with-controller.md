@@ -1,10 +1,16 @@
-# Upgrade via the `ClusterUpgrade` CR (cluster-upgrade-controller)
+# Upgrade bootc-mke3 (via the `ClusterUpgrade` CR)
 
-This guide explains how to upgrade an existing `bootc-mke3` cluster using the
-kube-native `ClusterUpgrade` custom resource, handled by the
-`cluster-upgrade-controller`. It is an alternative to the Ansible-based
-[upgrade runbook](upgrade-bootc-mke3.md) — same underlying upgrade mechanism,
-driven by a CR instead of a playbook run from an operator's workstation.
+This is the **canonical** way to upgrade an existing `bootc-mke3` cluster:
+applying a kube-native `ClusterUpgrade` custom resource, handled by the
+`cluster-upgrade-controller` already installed on the cluster by default.
+No SSH and no Ansible inventory are required — only `kubectl` access via the
+[client bundle](access-cluster.md).
+
+> [!NOTE]
+> A manual, Ansible-driven exception path exists for clusters where
+> `cluster-upgrade-controller` is unavailable or disabled — see the
+> [Ansible upgrade runbook](upgrade-bootc-mke3.md). Both paths run the
+> identical underlying `mirantis/ucp upgrade` checks and commands.
 
 > [!WARNING]
 > **Known issue, tracked separately**: the embedded `mirantis/ucp upgrade
@@ -13,12 +19,11 @@ driven by a CR instead of a playbook run from an operator's workstation.
 > `bootc-mke3`'s MCR builds. None of the documented bypass flags
 > (`--force-minimums`, `--force-recent-backup`, `--force-port-check`) cover
 > this check, and no config workaround is known. This is the **same**
-> `mirantis/ucp` binary check used by the Ansible
-> [upgrade runbook](upgrade-bootc-mke3.md)'s `mke-upgrade-playbook.yml` — if
-> you hit this on one upgrade path, the other will fail identically, so
-> switching mechanisms will not work around it. Do not spend time bypassing
-> `mke3-verify-environment` before confirming your cluster's storage driver
-> is reported as `overlay2` (`docker info --format '{{.Driver}}'`).
+> `mirantis/ucp` binary check used by the Ansible upgrade exception path's
+> `mke-upgrade-playbook.yml` — if you hit this here, that path fails
+> identically, so switching mechanisms will not work around it. Do not spend
+> time bypassing `mke3-verify-environment` before confirming your cluster's
+> storage driver is reported as `overlay2` (`docker info --format '{{.Driver}}'`).
 
 ## Prerequisites
 

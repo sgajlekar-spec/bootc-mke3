@@ -2,7 +2,14 @@
 
 This guide explains how to upgrade an existing Mirantis Kubernetes Engine (MKE) cluster to the latest version or switch to a specific newer release.
 
-> This procedure drives the upgrade from Ansible, run from an operator's workstation. For a kube-native alternative — a `ClusterUpgrade` custom resource handled by the `cluster-upgrade-controller` already installed on the cluster — see [upgrade via the ClusterUpgrade CR](upgrade-with-controller.md). Both paths run the identical underlying `mirantis/ucp upgrade` checks and commands.
+> **This is a manual, Ansible-driven exception path.** The canonical way to
+> upgrade a `bootc-mke3` cluster is the kube-native `ClusterUpgrade` custom
+> resource, handled by `cluster-upgrade-controller` (installed by default) —
+> see [upgrade via the ClusterUpgrade CR](upgrade-with-controller.md). Use
+> this Ansible playbook only when the controller is unavailable or disabled
+> on the cluster, or when you specifically need workstation-driven
+> orchestration outside Kubernetes. Both paths run the identical underlying
+> `mirantis/ucp upgrade` checks and commands.
 
 ## Prerequisites
 
