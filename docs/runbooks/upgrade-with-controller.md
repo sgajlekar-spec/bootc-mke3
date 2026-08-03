@@ -9,7 +9,7 @@ No SSH and no Ansible inventory are required — only `kubectl` access via the
 > [!NOTE]
 > A manual, Ansible-driven exception path exists for clusters where
 > `cluster-upgrade-controller` is unavailable or disabled — see the
-> [Ansible upgrade runbook](upgrade-bootc-mke3.md). Both paths run the
+> [Ansible upgrade runbook](upgrade-with-ansible.md). Both paths run the
 > identical underlying `mirantis/ucp upgrade` checks and commands.
 
 > [!WARNING]
