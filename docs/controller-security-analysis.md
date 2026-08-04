@@ -1,11 +1,15 @@
 # Security Analysis: Cluster Management Controllers
 
-This document analyzes the security posture of the two Kubernetes controllers `bootc-mke3` uses to automate cluster lifecycle operations, and lists concrete mitigations. Both controllers are vendored into this repository as git submodules for reference:
+This document analyzes the security posture of the two Kubernetes controllers `bootc-mke3` uses to automate cluster lifecycle operations, and lists concrete mitigations. Both controllers are analyzed from their upstream repositories at the commits below (not vendored in this repo):
 
-| Controller | Path | Upstream | Commit analyzed |
-|---|---|---|---|
-| cluster-upgrade-controller | `controllers/cluster-upgrade-controller` | `git@github.com:Mirantis/cluster-upgrade-controller.git` | `8d37c8d` (2026-07-16) |
-| machine-config-controller | `controllers/machine-config-controller` | `git@github.com:Mirantis/machine-config-controller.git` | `6b2b670` (2026-07-16) |
+| Controller | Upstream | Commit analyzed |
+|---|---|---|
+| cluster-upgrade-controller | `git@github.com:Mirantis/cluster-upgrade-controller.git` | `8d37c8d` (2026-07-16) |
+| machine-config-controller | `git@github.com:Mirantis/machine-config-controller.git` | `6b2b670` (2026-07-16) |
+
+## How to re-run this analysis
+
+Since the controllers are no longer vendored into this repository, re-verifying any claim below requires cloning the two upstream repositories at (or near) the pinned commits above — `cluster-upgrade-controller` @ `8d37c8d` and `machine-config-controller` @ `6b2b670` — and re-checking the cited files and line ranges directly against those checkouts.
 
 > [!IMPORTANT]
 > Both controllers depend on [Rancher's System Upgrade Controller (SUC)](https://github.com/rancher/system-upgrade-controller), which is *not* vendored here and is out of scope for source review, but its trust model is central to both controllers' security and is analyzed below based on how it is invoked and configured (`ansible/tasks/suc-priv-grant-tasks.yml`, `ansible/tasks/mke-upgrade-controller-tasks.yml`).
@@ -29,7 +33,7 @@ flowchart LR
 - **Consequence**: anyone who can create or edit the CR that drives a given controller (`ClusterUpgrade` or `MachineConfigChange`) — or who can directly create/edit the resulting `Plan` in the `system-upgrade` namespace — has **root-equivalent access to every node the Plan targets**. This is stated explicitly by the machine-config-controller project itself:
 
   > "Creating a `MachineConfigChange` is cluster-root-equivalent on every node it matches — the generated SUC `Plan` runs a privileged, host-PID, host-root-mounted job per node. RBAC `create` on this CRD should be treated like `cluster-admin`."
-  > — `controllers/machine-config-controller/README.md:17-23`, `controllers/machine-config-controller/docs/reference.md:3-7`
+  > — [`README.md#L17-L23`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/README.md#L17-L23), [`docs/reference.md#L3-L7`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/docs/reference.md#L3-L7)
 
   The same reasoning applies to `cluster-upgrade-controller`'s `ClusterUpgrade` CRD: it drives `bootc switch`, Docker daemon reconfiguration, and MKE3/MKE4 upgrade scripts through identical SUC Plans.
 
@@ -41,7 +45,7 @@ flowchart LR
 
 ### 2.1 RBAC footprint
 
-Source: `controllers/cluster-upgrade-controller/config/rbac/role.yaml:1-116` (mirrored in `chart/cluster-upgrade-controller/templates/rbac.yaml`), bound cluster-wide via `ClusterRoleBinding` to the `cluster-upgrade-controller` ServiceAccount.
+Source: [`config/rbac/role.yaml#L1-L116`](https://github.com/Mirantis/cluster-upgrade-controller/blob/8d37c8d/config/rbac/role.yaml#L1-L116) (mirrored in `chart/cluster-upgrade-controller/templates/rbac.yaml`), bound cluster-wide via `ClusterRoleBinding` to the `cluster-upgrade-controller` ServiceAccount.
 
 | API group | Resource | Verbs | Purpose |
 |---|---|---|---|
@@ -173,8 +177,8 @@ Ordered by leverage (highest-impact / lowest-effort first):
 
 ## 7. References
 
-- `controllers/cluster-upgrade-controller/docs/architecture.md`, `docs/reference.md`
-- `controllers/machine-config-controller/docs/architecture.md`, `docs/reference.md`, `README.md#security-model`
+- [`docs/architecture.md`](https://github.com/Mirantis/cluster-upgrade-controller/blob/8d37c8d/docs/architecture.md), [`docs/reference.md`](https://github.com/Mirantis/cluster-upgrade-controller/blob/8d37c8d/docs/reference.md)
+- [`docs/architecture.md`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/docs/architecture.md), [`docs/reference.md`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/docs/reference.md), [`README.md#security-model`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/README.md#security-model)
 - [Rancher System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
 - `ansible/tasks/suc-priv-grant-tasks.yml`, `ansible/tasks/mke-upgrade-controller-tasks.yml`
 - Companion runbook: [Harden MKE3 / Kubernetes](runbooks/harden-mke3-kubernetes.md)
