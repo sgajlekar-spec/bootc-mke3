@@ -30,7 +30,7 @@ Cluster should consist of one or more compute machine nodes. In order to use `bo
 > mechanisms, prefer kickstart unless you are specifically working with a
 > cloud build.
 
-2. All machines meet MKE hardware requirements. For the list of requirements, please see Mirantis Kubernetes Engine official documentation pages, [hardware requirements section](https://docs.mirantis.com/mke/3.8/common/mke-hw-reqs.html)
+2. All machines meet MKE hardware requirements. For the list of requirements, please see Mirantis Kubernetes Engine official documentation pages, [hardware requirements section](https://docs.mirantis.com/mke/3.9/common/mke-hw-reqs.html)
 
 ### Machine connection
 
@@ -40,7 +40,7 @@ Preferred way of machine connection is SSH with a passwordless user that has sud
 
 ## Network 
 
-The cluster machines must all be in a valid network. Please see Mirantis Kubernetes Engine official documentation pages, [networking section](https://docs.mirantis.com/mke/3.8/install/predeployment/configure-networking.html), on how to properly configure networking.
+The cluster machines must all be in a valid network. Please see Mirantis Kubernetes Engine official documentation pages, [networking section](https://docs.mirantis.com/mke/3.9/install/predeployment/configure-networking.html), on how to properly configure networking.
 
 ## Provisioning output (coupling to the installer/upgrader)
 
