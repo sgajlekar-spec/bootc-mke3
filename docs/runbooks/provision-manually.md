@@ -1,6 +1,6 @@
 # Manually provision a cluster
 
-If none of the `bootc-mke3` provisioning tooling meets the needs of an `bootc-mke3` infrastructure cluster, then manual provisoning will be needed. This involves the creation of a number of machine node targets for an MKE cluster, in a network that meets the documented Mirantis product needs.
+If none of the `bootc-mke3` provisioning tooling meets the needs of an `bootc-mke3` infrastructure cluster, then manual provisioning will be needed. This involves the creation of a number of machine node targets for an MKE cluster, in a network that meets the documented Mirantis product needs.
 
 Because manual provisioning is so diverse, this runbook won't be able to focus on technical directives, and will have to focus on more abstract concepts.
 
