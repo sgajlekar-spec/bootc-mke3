@@ -76,11 +76,38 @@ A fresh instance's own firewalld (active by default) ships only the
 `ssh`, `cockpit`, and `dhcpv6-client` services — none of the cluster ports.
 The swarm join itself still succeeds (it's outbound-only), but the node is
 then unreachable for inbound gossip/overlay traffic until the firewall is
-opened, so open the required services in the same user-data. The
-`firewall-cmd --permanent` + `--reload` pair below takes effect immediately;
-no reboot is needed.
+opened. This is unrelated to the cluster's `disable_firewalld` Ansible
+variable (default `false` — Ansible-managed nodes keep firewalld on and get
+per-service rules from `tasks/mke-open-ports-tasks.yml`): a no-touch-joined
+worker is never touched by the Ansible installer at all, so that variable's
+value elsewhere is irrelevant here — the node keeps the OS image's raw
+firewalld defaults until user-data configures it directly. Use the same
+zones/services `mke-open-ports-tasks.yml` applies to a worker (`public` zone
+for `mke_worker_internal`, `trusted` zone plus a trusted loopback interface
+for `mke_worker_self`), so the node ends up firewall-equivalent to one
+Ansible actually installed.
 
-Pass as instance user-data (e.g. `aws ec2 run-instances --user-data file://...`):
+Separately, baked-in host hardening sets `kernel.modules_disabled=1`, which
+blocks loading the `xt_statistic` kernel module on any node whose kube-proxy
+starts *after* that lockdown sysctl has already applied — which is every
+node except whichever one happened to win the boot-time race during the
+initial cluster stand-up, so this recurs on every no-touch-joined worker.
+Symptom: calico-node's install-cni init container `CrashLoopBackOff`, with
+kube-proxy logging `iptables-restore: Couldn't load match 'statistic'`.
+Preload the module via `/etc/modules-load.d/xt_statistic.conf` (content: the
+single line `xt_statistic`) — `systemd-modules-load.service` is ordered
+`Before=systemd-sysctl.service`, so a module listed there loads before the
+lockdown sysctl applies, but only on the *next* boot. A no-touch-joined
+worker is already running with the module unavailable, so it needs a
+self-triggered reboot after joining — gated on the join sentinel
+(`/var/lib/mke3/joined`, see [no-touch join](../no-touch-join.md)) so it
+can't race the join itself, via a small oneshot unit that polls then
+reboots.
+
+Putting all of that together, pass this as instance user-data (e.g. `aws
+ec2 run-instances --user-data file://...`) — the `firewall-cmd --permanent`
+and `--reload` calls take effect immediately, no reboot needed for those;
+only the module preload needs the guarded reboot:
 
 ```yaml
 #cloud-config
@@ -90,50 +117,6 @@ write_files:
     content: |
       SWARM_TOKEN=SWMTKN-1-<your-worker-token>
       SWARM_MANAGER=10.0.0.10:2377
-runcmd:
-  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
-  - firewall-cmd --reload
-```
-
-On AWS, harden the instance metadata service so the token in user-data is not
-reachable from containers — require IMDSv2 with a hop limit of 1:
-
-```
---metadata-options HttpTokens=required,HttpPutResponseHopLimit=1
-```
-
-#### Kernel module preload (kube-proxy dependency)
-
-Baked-in host hardening sets `kernel.modules_disabled=1`, which blocks
-loading the `xt_statistic` kernel module on any node whose kube-proxy starts
-*after* that lockdown sysctl has already applied — which is every node
-except whichever one happened to win the boot-time race during the initial
-cluster stand-up, so this recurs on every no-touch-joined worker. Symptom:
-calico-node's install-cni init container `CrashLoopBackOff`, with kube-proxy
-logging `iptables-restore: Couldn't load match 'statistic'`.
-
-Preload the module ahead of the lockdown by dropping it into
-`/etc/modules-load.d/xt_statistic.conf` (content: the single line
-`xt_statistic`). `systemd-modules-load.service` is ordered
-`Before=systemd-sysctl.service`, so a module listed there loads before the
-lockdown sysctl applies — but only on the *next* boot. A no-touch-joined
-worker is already running with the module unavailable, so it needs a
-self-triggered reboot after joining:
-
-```yaml
-runcmd:
-  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
-  - firewall-cmd --reload
-  - echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
-```
-
-That reboot must not race the join itself — gate it on the join sentinel
-(`/var/lib/mke3/joined`, see [no-touch join](../no-touch-join.md)) instead of
-firing unconditionally. A small oneshot unit does the poll-then-reboot;
-deliver it via `write_files` and enable it from `runcmd`:
-
-```yaml
-write_files:
   - path: /etc/systemd/system/mke3-postjoin-reboot.service
     permissions: '0644'
     content: |
@@ -146,17 +129,27 @@ write_files:
       Type=oneshot
       ExecStart=/bin/sh -c 'for i in $(seq 1 60); do [ -f /var/lib/mke3/joined ] && break; sleep 5; done; [ -f /var/lib/mke3/joined ] && touch /var/lib/mke3/postjoin-reboot-done && systemctl reboot'
 runcmd:
-  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+  - firewall-cmd --zone=trusted --add-interface=lo --permanent
+  - firewall-cmd --zone=public --add-service=mke_worker_internal --permanent
+  - firewall-cmd --zone=trusted --add-service=mke_worker_self --permanent
   - firewall-cmd --reload
   - echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
   - systemctl enable --now mke3-postjoin-reboot.service
 ```
 
+On AWS, harden the instance metadata service so the token in user-data is not
+reachable from containers — require IMDSv2 with a hop limit of 1:
+
+```
+--metadata-options HttpTokens=required,HttpPutResponseHopLimit=1
+```
+
 #### Bare metal (kickstart — file shredded after join)
 
-Append to the kickstart `%post`. The same firewalld gap described above
-applies here too — the last two lines open the required cluster services
-immediately, no reboot needed:
+Append to the kickstart `%post`. The same firewalld gap, `xt_statistic`
+gap, and guarded-reboot need described above apply here too — same zones,
+same module, same sentinel-gated reboot unit, just written directly instead
+of via cloud-init's `write_files`/`runcmd`:
 
 ```
 %post --erroronfail
@@ -166,8 +159,25 @@ SWARM_TOKEN=SWMTKN-1-<your-worker-token>
 SWARM_MANAGER=10.0.0.10:2377
 EOF
 chmod 600 /etc/mke3/swarm-join.env
-firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+
+firewall-cmd --zone=trusted --add-interface=lo --permanent
+firewall-cmd --zone=public --add-service=mke_worker_internal --permanent
+firewall-cmd --zone=trusted --add-service=mke_worker_self --permanent
 firewall-cmd --reload
+
+echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
+
+cat > /etc/systemd/system/mke3-postjoin-reboot.service <<'EOF'
+[Unit]
+Description=Reboot once to activate xt_statistic after no-touch join
+After=swarm-join.service
+ConditionPathExists=!/var/lib/mke3/postjoin-reboot-done
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for i in $(seq 1 60); do [ -f /var/lib/mke3/joined ] && break; sleep 5; done; [ -f /var/lib/mke3/joined ] && touch /var/lib/mke3/postjoin-reboot-done && systemctl reboot'
+EOF
+systemctl enable --now mke3-postjoin-reboot.service
 %end
 ```
 
