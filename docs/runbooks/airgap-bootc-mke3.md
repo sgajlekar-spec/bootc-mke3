@@ -52,9 +52,9 @@ your internal mirror host(s) standing in for `registry.mirantis.com`. Run
 | Variable | Default | Air-gap action |
 |---|---|---|
 | `cluster_upgrade_controller_chart` | `{{ playbook_dir }}/mke-bundle/cluster-upgrade-controller-chart` (node-fetched) | Override if deploying a different controller version than the one preloaded on this image, **or** if running `mke-post-install-playbook.yml` standalone from a different controller/directory than the one that ran install (the node-fetched default will not exist there) — point at an `oci://` chart URL |
-| `cluster_upgrade_controller_version` | `0.1.3` | Only consulted when `cluster_upgrade_controller_chart` is set to an `oci://` URL — pin to whatever version you actually mirrored |
+| `cluster_upgrade_controller_version` | matches whatever this image build preloaded — check `versions.txt` on a booted node | Only consulted when `cluster_upgrade_controller_chart` is set to an `oci://` URL — pin to whatever version you actually mirrored |
 | `machine_config_controller_chart` | `oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller` | Point at your mirrored OCI chart registry |
-| `machine_config_controller_version` | `0.1.4` | Pin to whatever version you actually mirrored |
+| `machine_config_controller_version` | matches whatever this image build preloaded — check `versions.txt` on a booted node | Pin to whatever version you actually mirrored |
 | `suc_crd_manifest_src` | `{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller-crd.yaml` (node-fetched) | Override if deploying a different SUC version than the one preloaded on this image, **or** if running `mke-post-install-playbook.yml` standalone from a different controller/directory than the one that ran install (the node-fetched default will not exist there) — point at a local path or internal mirror URL |
 | `suc_controller_manifest_src` | `{{ playbook_dir }}/mke-bundle/controller-manifests/system-upgrade-controller.yaml` (node-fetched) | Same as above — and the image reference *inside* whatever manifest you point at must be reachable from cluster nodes |
 | `deploy_suc` | `true` | Set `false` if you don't need scheduled OS/MKE upgrades and want to skip the whole SUC dependency chain |
@@ -74,4 +74,4 @@ your internal mirror host(s) standing in for `registry.mirantis.com`. Run
    `suc_controller_manifest_src`/`cluster_upgrade_controller_chart` only if
    you deliberately want a different version than the one preloaded on this
    image.
-5. Run `reg-creds-playbook.yml`, then `mke-install-playbook.yml`.
+4. Run `reg-creds-playbook.yml`, then `mke-install-playbook.yml`.
