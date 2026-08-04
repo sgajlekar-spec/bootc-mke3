@@ -25,10 +25,25 @@ For how the mechanism works internally, see the
 1. A running MKE 3 / Docker Swarm cluster with at least one reachable manager.
 2. New machines provisioned from a `bootc-mke3` image (all current images ship
    `swarm-join.service` enabled).
-3. Network path from each new machine to a manager on TCP `2377` (cluster
-   management). Joined workers additionally need `7946/tcp+udp` and `4789/udp`
-   for overlay networking.
+3. Network path from each new machine to a manager per the [port
+   requirements](#port-requirements) below — the join itself only needs the
+   join-minimum row.
 4. Access to a manager node to issue a join token.
+
+### Port requirements
+
+| Scenario | Ports |
+|---|---|
+| Join minimum | `2377/tcp`, `7946/tcp+udp`, `4789/udp` |
+| Full post-join operation | `mke_worker_internal`: `179/tcp`, `4789/udp`, `7946/tcp+udp`, `9091/tcp`, `9100/tcp`, `10250/tcp`, `12376/tcp`; `mke_worker_self`: `6444/tcp`, `9099/tcp`, `10248/tcp`, `12378/tcp`, `12389/tcp` |
+
+Both service definitions are visible via `firewall-cmd --get-services` on any
+manager. Opening only the join-minimum set is enough for the join handshake
+itself, but a later `ucp upgrade checks` run — or any full-cluster health
+probe — will fail naming blocked ports once it reaches past the
+join-minimum set. Provision the full set at the AWS security-group (or
+equivalent network) layer from the start rather than widening it after the
+fact.
 
 ## Procedure
 
@@ -57,6 +72,14 @@ The credential file itself is written to tmpfs and never touches disk. Note
 that cloud-init independently caches the raw user-data under `/var/lib/cloud`;
 that cache is scrubbed automatically after a successful join.
 
+A fresh instance's own firewalld (active by default) ships only the
+`ssh`, `cockpit`, and `dhcpv6-client` services — none of the cluster ports.
+The swarm join itself still succeeds (it's outbound-only), but the node is
+then unreachable for inbound gossip/overlay traffic until the firewall is
+opened, so open the required services in the same user-data. The
+`firewall-cmd --permanent` + `--reload` pair below takes effect immediately;
+no reboot is needed.
+
 Pass as instance user-data (e.g. `aws ec2 run-instances --user-data file://...`):
 
 ```yaml
@@ -67,6 +90,9 @@ write_files:
     content: |
       SWARM_TOKEN=SWMTKN-1-<your-worker-token>
       SWARM_MANAGER=10.0.0.10:2377
+runcmd:
+  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+  - firewall-cmd --reload
 ```
 
 On AWS, harden the instance metadata service so the token in user-data is not
@@ -76,9 +102,61 @@ reachable from containers — require IMDSv2 with a hop limit of 1:
 --metadata-options HttpTokens=required,HttpPutResponseHopLimit=1
 ```
 
+#### Kernel module preload (kube-proxy dependency)
+
+Baked-in host hardening sets `kernel.modules_disabled=1`, which blocks
+loading the `xt_statistic` kernel module on any node whose kube-proxy starts
+*after* that lockdown sysctl has already applied — which is every node
+except whichever one happened to win the boot-time race during the initial
+cluster stand-up, so this recurs on every no-touch-joined worker. Symptom:
+calico-node's install-cni init container `CrashLoopBackOff`, with kube-proxy
+logging `iptables-restore: Couldn't load match 'statistic'`.
+
+Preload the module ahead of the lockdown by dropping it into
+`/etc/modules-load.d/xt_statistic.conf` (content: the single line
+`xt_statistic`). `systemd-modules-load.service` is ordered
+`Before=systemd-sysctl.service`, so a module listed there loads before the
+lockdown sysctl applies — but only on the *next* boot. A no-touch-joined
+worker is already running with the module unavailable, so it needs a
+self-triggered reboot after joining:
+
+```yaml
+runcmd:
+  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+  - firewall-cmd --reload
+  - echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
+```
+
+That reboot must not race the join itself — gate it on the join sentinel
+(`/var/lib/mke3/joined`, see [no-touch join](../no-touch-join.md)) instead of
+firing unconditionally. A small oneshot unit does the poll-then-reboot;
+deliver it via `write_files` and enable it from `runcmd`:
+
+```yaml
+write_files:
+  - path: /etc/systemd/system/mke3-postjoin-reboot.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Reboot once to activate xt_statistic after no-touch join
+      After=swarm-join.service
+      ConditionPathExists=!/var/lib/mke3/postjoin-reboot-done
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'for i in $(seq 1 60); do [ -f /var/lib/mke3/joined ] && break; sleep 5; done; [ -f /var/lib/mke3/joined ] && touch /var/lib/mke3/postjoin-reboot-done && systemctl reboot'
+runcmd:
+  - firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+  - firewall-cmd --reload
+  - echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
+  - systemctl enable --now mke3-postjoin-reboot.service
+```
+
 #### Bare metal (kickstart — file shredded after join)
 
-Append to the kickstart `%post`:
+Append to the kickstart `%post`. The same firewalld gap described above
+applies here too — the last two lines open the required cluster services
+immediately, no reboot needed:
 
 ```
 %post --erroronfail
@@ -88,6 +166,8 @@ SWARM_TOKEN=SWMTKN-1-<your-worker-token>
 SWARM_MANAGER=10.0.0.10:2377
 EOF
 chmod 600 /etc/mke3/swarm-join.env
+firewall-cmd --permanent --add-service=mke_worker_internal --add-service=mke_worker_self
+firewall-cmd --reload
 %end
 ```
 
@@ -119,13 +199,20 @@ unaffected. The next batch starts again at step 1 with the fresh token.
 
 ## Expected Results
 
-On a manager, the new machine appears as a `worker` with status `Ready`:
+On a manager, `kubectl get nodes` is the authoritative check — confirm the
+new machine appears and is `Ready`:
 
 ```
-docker node ls
+kubectl get nodes
 ```
 
-The new worker also appears in the MKE UI under Shared Resources → Nodes.
+`docker node ls` and the MKE UI (Shared Resources → Nodes) also list the
+node, but treat both as secondary/informational only. A confirmed anomaly
+(sourced from `ucp-controller`) can leave a fully `Ready`, schedulable
+worker showing `Down` in `docker node ls` indefinitely, with the message
+"Node not yet found in classic node inventory" — this does not mean the
+node is broken. Don't block a batch, or start troubleshooting, on
+`docker node ls`/the MKE UI alone; cross-check `kubectl get nodes` first.
 
 On the joined machine (if you have access):
 

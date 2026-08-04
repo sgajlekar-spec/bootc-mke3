@@ -55,6 +55,11 @@ enabled, and retries on the next boot.
 
 Once the machine is in the swarm, MKE onboards it automatically — the new
 worker appears in the MKE UI and `docker node ls` without further action.
+Note: `docker node ls` has been observed to show a joined worker as `Down`
+indefinitely ("Node not yet found in classic node inventory", sourced from
+`ucp-controller`) even though the node is `Ready` and schedulable in
+`kubectl get nodes` — treat `kubectl get nodes` as the authoritative check
+and don't block on `docker node ls` catching up.
 
 ## Credential format
 
