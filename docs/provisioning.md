@@ -21,6 +21,15 @@ Cluster should consist of one or more compute machine nodes. In order to use `bo
 > [!NOTE]
 > **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider using **Generic** ISO. QCOW2 is considered production-grade by default, although it is user's responsibility to customise it in a proper and secure way.
 
+> [!IMPORTANT]
+> Machine customization at provision time is done via **kickstart** for
+> ISO-provisioned machines — the standard production mechanism (see
+> [ISO editions](iso-editions.md#generic-image-customisation)). cloud-init
+> is only available on the cloud-platform builds (AMI/QCOW2) and is
+> primarily used for internal testing. Where this documentation offers both
+> mechanisms, prefer kickstart unless you are specifically working with a
+> cloud build.
+
 2. All machines meet MKE hardware requirements. For the list of requirements, please see Mirantis Kubernetes Engine official documentation pages, [hardware requirements section](https://docs.mirantis.com/mke/3.9/common/mke-hw-reqs.html)
 
 ### Machine connection
@@ -59,7 +68,7 @@ Further details can be found in the runbook for [manually provisioning a cluster
 
 If you're planning to use private OCI registry to store `bootc-mke3` artifacts (OCI images) and use them for your cluster, you will need to provide registry credentials in order to authenticate. To do so, you will need to add credentials file into the each machine, because for most of the operations (like upgrade) there will be a need to pull OCI image from the registry.
 
-The way of injecting credentials into the machine can vary from case to case. Some common ways to do so is to use cloud-init or ansible. The user should select the way that is more suitable for the use case.
+The way of injecting credentials into the machine can vary from case to case. Common ways, in order of applicability: **kickstart** (`%post`) for ISO-provisioned machines — the standard production path; the provided [ansible playbook](../ansible/reg-creds-playbook.yml) (setup below) where SSH access is still available; or cloud-init user-data — cloud-platform builds (AMI/QCOW2) only, primarily used for internal testing. The user should select the way that is most suitable for the use case.
 
 Requirements for the registry credentials:
 
