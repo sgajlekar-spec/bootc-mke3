@@ -19,7 +19,7 @@ Simple ISO considerations:
 
 Generic ISO - is a plain ISO that lacks any customisation.
 
-As `bootc-mke3` is based on Rocky Linux, it is using [Anaconda](https://www.anaconda.com/docs/main) to perform installation and customisation with the help of Kickstart.
+As `bootc-mke3` is based on Rocky Linux, it is using [Anaconda](https://anaconda-installer.readthedocs.io/en/latest/) to perform installation and customisation with the help of Kickstart.
 
 ### Generic image customisation
 
