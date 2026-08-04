@@ -27,14 +27,19 @@ The transition follows the following phases, which refer either to runbooks ment
 
 #### 1. Control/Management plane transition
 
-* When rotating machines in the cluster, It is recommended to add a new machine, then take away an old machine - the order can be reversed if needed *
-* After each operation, it is important to wait for MKE to report a healthy cluster before proceeding to the next one *
-* Try to focus on maintaining a set number of managers in the MKE3 cluster as opposed to drastically changing the net number of managers, which can create election problems *
+> [!NOTE]
+> When rotating machines in the cluster, It is recommended to add a new machine, then take away an old machine - the order can be reversed if needed
+
+> [!WARNING]
+> After each operation, it is important to wait for MKE to report a healthy cluster before proceeding to the next one
+
+> [!WARNING]
+> Try to focus on maintaining a set number of managers in the MKE3 cluster as opposed to drastically changing the net number of managers, which can create election problems
 
 Iterate through managers, and one at a time add a new bootc-mke3 based machine to the cluster as a manager, followed by removing a manager when the cluster has stabilized.
 
 1. Add a new manager:
-   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](https://github.com/Mirantis/bootc-mke3/blob/main/docs/runbooks/provision-manually.md)
+   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](provision-manually.md)
    b. Add the new machine to the cluster: Runbook: [Add a machine to the cluster](#add-a-machine-to-the-mcrmke3-cluster)
    c. Promote the new machine to a manager: Runbook: [Promote a worker to a manager](#promote-a-worker-to-a-manager)
 
@@ -45,12 +50,13 @@ Iterate through managers, and one at a time add a new bootc-mke3 based machine t
 
 #### 2. Worker plane transition
 
-* It is recommended to add worker machines to a cluster before removing old machines, in order to maintain scheduling capacity *
+> [!NOTE]
+> It is recommended to add worker machines to a cluster before removing old machines, in order to maintain scheduling capacity
 
 Iterate through workers, and one at a time add a new bootc-mke3 based machine to the cluster as a worker, followed by removing a worker when the cluster has stabilized. It is common also to swap machine in batches, if your workload can handle the capacity disruption.
 
 1. Add a new worker:
-   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](https://github.com/Mirantis/bootc-mke3/blob/main/docs/runbooks/provision-manually.md)
+   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](provision-manually.md)
    b. Add the new machine to the cluster: Runbook: [Add a machine to the cluster](#add-a-machine-to-the-mcrmke3-cluster)
 
 2. Remove a worker from the cluster
@@ -65,7 +71,7 @@ Run the following docker command against the swarm cluster:
 ```
 docker swarm join-token worker
 ```
-@see [https://docs.docker.com/reference/cli/docker/swarm/join-token/](https://docs.docker.com/reference/cli/docker/swarm/join-token/)
+See the [docker swarm join-token reference](https://docs.docker.com/reference/cli/docker/swarm/join-token/).
 
 #### Determine a cluster machine ID
 
@@ -73,7 +79,7 @@ Run the following docker command against the swarm cluster:
 ```
 docker node ls
 ```
-@see [https://docs.docker.com/reference/cli/docker/node/ls/](https://docs.docker.com/reference/cli/docker/node/ls/)
+See the [docker node ls reference](https://docs.docker.com/reference/cli/docker/node/ls/).
 
 From the returned list, identify your machine by hostname, and find its ID value
 
@@ -85,7 +91,7 @@ Run the following docker command against the swarm cluster:
 ```
 docker node promote [machine ID]
 ```
-@see [https://docs.docker.com/reference/cli/docker/node/promote/](https://docs.docker.com/reference/cli/docker/node/promote/)
+See the [docker node promote reference](https://docs.docker.com/reference/cli/docker/node/promote/).
 
 #### Demote a manager to a worker
 
@@ -95,11 +101,12 @@ Run the following docker command against the swarm cluster:
 ```
 docker node demote [machine ID]
 ```
-@see [https://docs.docker.com/reference/cli/docker/node/demote/](https://docs.docker.com/reference/cli/docker/node/demote/)
+See the [docker node demote reference](https://docs.docker.com/reference/cli/docker/node/demote/).
 
 #### Isolate a Machine in the MCR/MKE3 cluster
 
-* before isolating a worker from the cluster, consider what workloads are running on the kubernetes/swarm node. If your workloads don't handle disruptions well then manually move workloads from the machine *
+> [!WARNING]
+> before isolating a worker from the cluster, consider what workloads are running on the kubernetes/swarm node. If your workloads don't handle disruptions well then manually move workloads from the machine
 
 You will need the machine id: Runbook: [Determine a cluster machine ID](#determine-a-cluster-machine-id)
 
@@ -108,22 +115,25 @@ Run the following kubectl commands again the kube api:
 kubectl cordon [machine id]
 kubectl drain [machine id]
 ```
-@see [https://kubernetes.io/docs/reference/kubectl/generated/kubectl_cordon/](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_cordon/)
-@see [https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/)
+See the [kubectl cordon reference](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_cordon/).
+See the [kubectl drain reference](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/).
 
-* this will drop all kubernetes workloads on the machine *
+> [!WARNING]
+> this will drop all kubernetes workloads on the machine
 
 Run the following docker command against the swarm cluster:
 ```
 docker node update --availability=drain [machine id]
 ```
-@see [https://docs.docker.com/reference/cli/docker/node/update/](https://docs.docker.com/reference/cli/docker/node/update/)
+See the [docker node update reference](https://docs.docker.com/reference/cli/docker/node/update/).
 
-* this will drop all docker swarm workloads on the machine *
+> [!WARNING]
+> this will drop all docker swarm workloads on the machine
 
 #### Add a Machine to the MCR/MKE3 cluster
 
-* In these instructions we only join machines as workers. Managers are joined as workers and then promoted *
+> [!NOTE]
+> In these instructions we only join machines as workers. Managers are joined as workers and then promoted
 
 You will need the machine id: Runbook: [Retrieve the join token](#retrieve-the-join-token)
 
@@ -131,19 +141,22 @@ On the machine to add, run:
 ```
 docker swarm join --token==[worker join token]
 ``` 
-@see [https://docs.docker.com/reference/cli/docker/swarm/join/](https://docs.docker.com/reference/cli/docker/swarm/join/)
+See the [docker swarm join reference](https://docs.docker.com/reference/cli/docker/swarm/join/).
 
-* this will join the machine as a new worker *
+> [!NOTE]
+> this will join the machine as a new worker
 
 #### Remove a Machine from the MCR/MKE3 cluster
 
 You will need the machine id: Runbook: [Determine a cluster machine ID](#determine-a-cluster-machine-id)
 
-* Run the following docker command against the swarm cluster *
+> [!NOTE]
+> Run the following docker command against the swarm cluster
+
 ```
 docker node rm [machine id]
 ```
-@see [https://docs.docker.com/reference/cli/docker/node/rm/](https://docs.docker.com/reference/cli/docker/node/rm/)
+See the [docker node rm reference](https://docs.docker.com/reference/cli/docker/node/rm/).
 
 ### Expected Results
 

@@ -86,7 +86,7 @@ Here is a full inventory file example (with dummy values):
             mke_url: 172.18.180.147
     ```
 
-# FAQ
+## FAQ
 ### How to generate ansible inventory from our Terraform provision modules
 Since we have created our terraform charts with the thought of coupling it with ansible, it's very easy to generate inventory file. 
 
