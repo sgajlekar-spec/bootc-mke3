@@ -11,7 +11,7 @@ VSphere setup has a significant set of requirements, because VMWare clusters ten
 In order to proceed with this guide
 
 1. Obtain `bootc-mke3` ISO and put it to the vSphere datastore that will be used for `bootc-mke3` cluster installation
-2. Configure vSphere networking by following [MKE documentation for network preparation](https://docs.mirantis.com/mke/3.7/install/predeployment/configure-networking.html)
+2. Configure vSphere networking by following [MKE documentation for network preparation](https://docs.mirantis.com/mke/3.9/install/predeployment/configure-networking.html)
     - Additionally, `bootc-mke3` nodes should have access to the NTP server (customer's local one or public one) and to https://get.mirantis.com
 3. In order to provision VMs in vSphere, you need to specify credentials of a user, that can operate vSphere. For a full list of privileges needed for the user, please see [Terraform vSphere provisioner documentation](https://registry.terraform.io/providers/hashicorp/vsphere/latest/docs#notes-on-required-privileges).
 
@@ -30,25 +30,23 @@ In the vSphere Web UI:
 1. Create new VM from `bootc-mke3` ISO. During VM creation:
     - As `Guest OS Family` select `Linux`.
     - As `Guest OS Version` select `Other 4.x or later Linux (64-bit)`.
-    - In `Customize hardware` section set values according to [official MKE hardware requirements](https://docs.mirantis.com/mke/3.7/common/mke-hw-reqs.html).
+    - In `Customize hardware` section set values according to [official MKE hardware requirements](https://docs.mirantis.com/mke/3.9/common/mke-hw-reqs.html).
     - In `Customize hardware` section use `bootc-mke3` ISO in `New CD/DVD Drive` parameter and check box to `Connect` it.
 2. Power On the VM.
-3. Launch Web Console for the VM and choose `Install MKEx 8-3.7-devel` option. Some initialization will happen and then you will enter graphical UI for `bootc-mke3` installation
-4. Select the language in GUI.
-5. After that there will be a warning pop-up window about `unstable, pre-release software`. Click on `I want to proceed`.
-6. Next, click on `Installation Destination`. Select automatic storage configuration (selected by default) and click `Done`.
-7. Click on `User Creation`. Create a user that will be used to pre-configure VM template in the next steps. Set the password and check box `Make this user administrator`.
-8. Configure network interface in `Network & Host Name`. If there is a DHCP server in the network -- just turn the interface on and proceed to the next step. If there is no DHCP server -- please configure network interface manually.
-9. When all the configurations are done, click on `Begin Installation` and wait for the installation to complete.
-10. Reboot the VM.
-11. Convert VM to the template.
+3. Launch Web Console for the VM and boot into the Anaconda installer, then proceed through the standard installation steps (language, storage, user creation, network, and Begin Installation).
+4. Next, click on `Installation Destination`. Select automatic storage configuration (selected by default) and click `Done`.
+5. Click on `User Creation`. Create a user that will be used to pre-configure VM template in the next steps. Set the password and check box `Make this user administrator`.
+6. Configure network interface in `Network & Host Name`. If there is a DHCP server in the network -- just turn the interface on and proceed to the next step. If there is no DHCP server -- please configure network interface manually.
+7. When all the configurations are done, click on `Begin Installation` and wait for the installation to complete.
+8. Reboot the VM.
+9. Convert VM to the template.
 
 **NOTE:** Multiple VM templates can be used for different type of workloads/roles.
 
 ### Variables
 In order to run the Terraform module, the terraform provider will need configuration for connecting to the VMware system.
 
-To configure connection to vSphere, create a copy of [terraform.tfvars.example](../terraform/vsphere/terraform.tfvars.example) file in the same `terraform/vsphere` folder and name it `terraform.tfvars`.
+To configure connection to vSphere, create a copy of [terraform.tfvars.example](../../terraform/vsphere/terraform.tfvars.example) file in the same `terraform/vsphere` folder and name it `terraform.tfvars`.
 
 In all the sections below we will be working with the copy, i.e. `terraform.tfvars` file.
 
