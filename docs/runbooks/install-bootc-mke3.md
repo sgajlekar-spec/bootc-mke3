@@ -44,4 +44,4 @@ for how to recover if you're already locked out.
 
 ## F.A.Q
 ### How can I install MKE with pre-configured settings/config?
-You'll need to set the `mke_config_src` to the path where your MKE toml file is. i.e. /usr/test/bootc-mke3-install/mke-config.toml. For the minimum version of the TOML file check [mke-config-min.toml.example](../examples/mke-config-min.toml.example). For complete list of toml config options check https://docs.mirantis.com/mke/3.8/ops/administer-cluster/configure-an-mke-cluster/configuration-options.html
+You'll need to set the `mke_config_src` to the path where your MKE toml file is. i.e. /usr/test/bootc-mke3-install/mke-config.toml. For the minimum version of the TOML file check [mke-config-min.toml.example](../examples/mke-config-min.toml.example). For complete list of toml config options check https://docs.mirantis.com/mke/3.9/ops/administer-cluster/configure-an-mke-cluster/configuration-options.html

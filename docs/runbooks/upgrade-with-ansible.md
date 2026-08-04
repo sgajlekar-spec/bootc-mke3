@@ -47,9 +47,9 @@ Ansible playbook runs without error. In order to verify the upgrade, go to the M
 
 ## MKE upgrade process troubleshooting
 
-MKE upgrade performed by ansible tooling which effectively just executing [MKE bootstrapper docker image with upgrade command](https://docs.mirantis.com/mke/3.8/cli-ref/mke-cli-upgrade.html). Additionally, before upgrade is performed, there are number of preupgrade checks and backups performed. 
+MKE upgrade performed by ansible tooling which effectively just executing [MKE bootstrapper docker image with upgrade command](https://docs.mirantis.com/mke/3.9/cli-ref/mke-cli-upgrade.html). Additionally, before upgrade is performed, there are number of preupgrade checks and backups performed.
 
-To troubleshoot MKE upgrade process, please see [official MKE documentation page](https://docs.mirantis.com/mke/3.8/ops/upgrades-and-migrations/upgrade-mke/troubleshoot-upgrade.html)
+To troubleshoot MKE upgrade process, please see [official MKE documentation page](https://docs.mirantis.com/mke/3.9/ops/upgrades-and-migrations/upgrade-mke/troubleshoot-upgrade.html)
 
 ## MCR upgrade process troubleshooting
 
