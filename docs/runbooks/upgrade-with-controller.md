@@ -49,14 +49,14 @@ No SSH and no Ansible inventory are required — only `kubectl` access via the
    cluster (`export KUBECONFIG=<bundle>/kube.yml`). No SSH to cluster
    machines is required for this path.
 4. Workers must be reachable from the manager(s) on the full
-   `mke_worker_internal`/`mke_worker_self` port sets, not just the minimal
-   ports required for [no-touch join](join-machines-no-touch.md) (`2377/tcp`,
-   `7946/tcp+udp`, `4789/udp`). `mke3-verify-environment` additionally probes
-   `10250/tcp` (kubelet) and `12376/tcp` (Docker TLS) from the control plane
-   to every worker; if these are blocked at the network layer (security
-   group, firewall between subnets, etc.) the step fails naming the blocked
-   ports and node(s), even if the workers' own OS firewall already allows
-   them.
+   `mke_worker_internal`/`mke_worker_self` port sets — see the [port
+   requirements](join-machines-no-touch.md#port-requirements) table for the
+   complete list, which goes beyond the minimal ports required just for
+   [no-touch join](join-machines-no-touch.md). `mke3-verify-environment`
+   probes the full set from the control plane to every worker; if any are
+   blocked at the network layer (security group, firewall between subnets,
+   etc.) the step fails naming the blocked ports and node(s), even if the
+   workers' own OS firewall already allows them.
 5. Read access to the target bootc OS image and MKE upgrade image referenced
    below (see [registry requirements](../provisioning.md#registry)).
 
