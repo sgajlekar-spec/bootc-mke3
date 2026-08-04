@@ -33,9 +33,13 @@ Prerequisites for the installation can be found in the [Provisioning](#provision
 
 To perform the installation, please see [installation runbook](docs/runbooks/install-bootc-mke3.md).
 
+### Post-install controllers
+
+A default install also deploys the System Upgrade Controller, `cluster-upgrade-controller`, and `machine-config-controller` to the cluster, and hardens SSH/sudo access on every host. See the [controllers runbook](docs/runbooks/install-controllers.md) for what gets deployed and how to verify it, and the [machine configuration runbook](docs/runbooks/machine-config-operations.md) for applying DNS/NTP/kernel/reboot changes cluster-wide via `machine-config-controller`.
+
 ## Upgrade
 
-To perform an upgrade , please see [upgrade runbook](docs/runbooks/upgrade-bootc-mke3.md).
+The canonical way to upgrade a `bootc-mke3` cluster is the kube-native `ClusterUpgrade` custom resource, handled by `cluster-upgrade-controller` (installed by default — see [Post-install controllers](#post-install-controllers)). See the [upgrade runbook](docs/runbooks/upgrade-with-controller.md). For clusters where the controller is unavailable or disabled, a manual Ansible-driven exception path exists — see the [Ansible upgrade runbook](docs/runbooks/upgrade-with-ansible.md).
 
 ## Adding machines (no-touch join)
 
@@ -51,4 +55,4 @@ Command-line access (`kubectl` and `docker`/Swarm) goes through the MKE client b
 
 ## Troubleshooting
 
-If you encounter issues, file an issue, or talk to us on the #prod-eng or #mkex-internal channel on the Mirantis Slack server.
+If you encounter issues, please file an issue on this repository or contact your Mirantis representative.
