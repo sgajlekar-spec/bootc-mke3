@@ -47,7 +47,7 @@ This `bootc-mke3` tooling includes a number of terraform modules that can provis
 - **AWS.** Full guide on how to provision `bootc-mke3` cluster on AWS can be found in [this document](runbooks/provision-terraform-aws.md)
 
 > [!IMPORTANT]
-> AWS-based provisioning is considered **dev/testing only**, not a production-grade `bootc-mke3` provisioning path. Because of that, the AMI ID required to provision `bootc-mke3` nodes on AWS is not published through any automated channel. To obtain a current AMI ID, visit the `#bootc-internal` channel in the Mirantis Slack space and find the latest release message — it lists the current AMI ID(s), and owning AWS account, per region.
+> AWS-based provisioning is considered **dev/testing only**, not a production-grade `bootc-mke3` provisioning path. Mirantis maintains AWS AMIs for `bootc-mke3` builds for this purpose, but AMI IDs are not published in this document and are not publicly announced. Contact your Mirantis representative to obtain a current AMI ID and its owning AWS account for your region.
 
 ### Manual provisioning (roll your own)
 
