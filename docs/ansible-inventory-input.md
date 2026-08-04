@@ -11,20 +11,20 @@ Types of Inventory files
 - **Variables**: Key-value pairs associated with the host.
   - Example: `ansible_connection` `ansible_ssh_private_key_file` `ansible_host`, `ansible_user`, `ansible_port`
   ```yaml
-    hosts:
-        # bootc-mke3-mngr1
-        bootc-mke3-mngr1:
-        ansible_connection: ssh
-        ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
-        ansible_user: test
-        ansible_host: 172.18.180.147
+  hosts:
+    # bootc-mke3-mngr1
+    bootc-mke3-mngr1:
+      ansible_connection: ssh
+      ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
+      ansible_user: test
+      ansible_host: 172.18.180.147
 
-        # bootc-mke3-wrk1
-        bootc-mke3-wrk1:
-        ansible_connection: ssh
-        ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
-        ansible_user: test
-        ansible_host: 172.18.180.149
+    # bootc-mke3-wrk1
+    bootc-mke3-wrk1:
+      ansible_connection: ssh
+      ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
+      ansible_user: test
+      ansible_host: 172.18.180.149
   ```
 
 ## 3. Group Parameters
@@ -61,36 +61,37 @@ Here is a full inventory file example (with dummy values):
   - Example:
     ```yaml
     all:
-        hosts:
-            # bootc-mke3-mngr1
-            bootc-mke3-mngr1:
-            ansible_connection: ssh
-            ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
-            ansible_user: test
-            ansible_host: 172.18.180.147
+      hosts:
+        # bootc-mke3-mngr1
+        bootc-mke3-mngr1:
+          ansible_connection: ssh
+          ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
+          ansible_user: test
+          ansible_host: 172.18.180.147
 
-            # bootc-mke3-wrk1
+        # bootc-mke3-wrk1
+        bootc-mke3-wrk1:
+          ansible_connection: ssh
+          ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
+          ansible_user: test
+          ansible_host: 172.18.180.149
+      children:
+        managers:
+          hosts:
+            bootc-mke3-mngr1:
+        workers:
+          hosts:
             bootc-mke3-wrk1:
-            ansible_connection: ssh
-            ansible_ssh_private_key_file: /Users/bootc-mke3/Desktop/terraform/vsphere/ssh-keys/bootc-mke3.pem
-            ansible_user: test
-            ansible_host: 172.18.180.149
-        children:
-            managers:
-            hosts:
-                bootc-mke3-mngr1:
-            workers:
-            hosts:
-                bootc-mke3-wrk1:
-        vars:
-            mke_url: 172.18.180.147
+      vars:
+        mke_url: 172.18.180.147
     ```
 
 ## FAQ
 ### How to generate ansible inventory from our Terraform provision modules
 Since we have created our terraform charts with the thought of coupling it with ansible, it's very easy to generate inventory file. 
 
-  1. In the terraform directory of the appropriate provider e.g. for vsphere **bootc-mke3-install/terraform/vsphere/**, execute the command `terraform apply`
-  2. Execute `terraform output -raw ansible_inventory`
+  1. In the terraform directory of the appropriate provider e.g. for vsphere **terraform/vsphere/**, execute the command `terraform apply`
+  2. Execute the output command for your platform:
+     - AWS (`terraform/aws`): `terraform output -raw bootc_ansible_output`
+     - vSphere (`terraform/vsphere`): `terraform output -raw ansible_inventory`
   3. The output can be simply be redirected and saved as a yaml file.
-  4. Profit! You have an Ansible inventory file

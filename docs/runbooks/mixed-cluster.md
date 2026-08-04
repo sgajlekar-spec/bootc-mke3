@@ -5,8 +5,10 @@ Mirantis has performed testing, and finds no reason defects for cases where an M
 Conceptually, Mirantis considers using mixed clusters as a transition state, for customer who intend to move to a full bootc-mke3 cluster.  There are no limitations in the mixed cluster itself, but the bootc-mke3 tooling does not accommodate the mixed state for upgrading.
 
 Note the following limitations
-1. A single MCR25 and MKE3 version must be used across the existing cluster, and the bootc-mke3 machines added must be based off of the same versions
+1. A single MCR and MKE3 version must be used across the existing cluster, and the bootc-mke3 machines added must be based off of the same versions
 2. bootc-mke3 cluster tooling for installation and upgrading will not be usable until a cluster contains only bootc-mke3 based machines
+
+This manual SSH-based docker swarm join/promote/demote workflow described below is intended specifically for the classic-to-bootc migration scenario, where you still have direct docker CLI access to an existing classic cluster. To add new bootc-mke3 machines to a cluster that is already fully bootc-mke3, use the standard no-touch join mechanism instead: [Join machines with no-touch](../join-machines-no-touch.md).
 
 ## Migrating to bootc-mke3 from a classic MCR/MKE3 cluster
 
@@ -14,7 +16,7 @@ Users of MCR/MKE3 who are interested in moving from their existing stack to a st
 
 ### Requirements
 
-1. An existing MCR25/MKE3 cluster:
+1. An existing MCR/MKE3 cluster:
    a. The cluster should be healthy according to MKE3 (at least the control plane must be healthy)
 2. Docker cli access the cluster (typically using the MKE3 client bundle, to access the swarm docker socket — see the [cluster access runbook](access-cluster.md))
 3. [Optional] kubectl access to the existing cluster (typically using the MKE3 client bundle, to access the kube API — see the [cluster access runbook](access-cluster.md))
@@ -110,10 +112,12 @@ See the [docker node demote reference](https://docs.docker.com/reference/cli/doc
 
 You will need the machine id: Runbook: [Determine a cluster machine ID](#determine-a-cluster-machine-id)
 
-Run the following kubectl commands again the kube api:
+Note: these kubectl commands require the Kubernetes node NAME (from `kubectl get nodes`), typically the same as the machine's hostname — this is NOT the docker node ID from the swarm lookup above. Do not conflate the two.
+
+Run the following kubectl commands against the kube api:
 ```
-kubectl cordon [machine id]
-kubectl drain [machine id]
+kubectl cordon [kubernetes node name]
+kubectl drain [kubernetes node name]
 ```
 See the [kubectl cordon reference](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_cordon/).
 See the [kubectl drain reference](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/).
@@ -139,9 +143,11 @@ You will need the machine id: Runbook: [Retrieve the join token](#retrieve-the-j
 
 On the machine to add, run:
 ```
-docker swarm join --token==[worker join token]
+docker swarm join --token [worker join token] [manager-host]:2377
 ``` 
 See the [docker swarm join reference](https://docs.docker.com/reference/cli/docker/swarm/join/).
+
+Note: `[manager-host]` is the address of an existing manager, obtainable by running `docker info --format '{{.Swarm.NodeAddr}}'` on a manager, or from the join-token command's own output on some Docker versions.
 
 > [!NOTE]
 > this will join the machine as a new worker
