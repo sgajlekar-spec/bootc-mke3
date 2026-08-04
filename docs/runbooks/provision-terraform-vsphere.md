@@ -13,7 +13,7 @@ In order to proceed with this guide
 1. Obtain `bootc-mke3` ISO and put it to the vSphere datastore that will be used for `bootc-mke3` cluster installation
 2. Configure vSphere networking by following [MKE documentation for network preparation](https://docs.mirantis.com/mke/3.7/install/predeployment/configure-networking.html)
     - Additionally, `bootc-mke3` nodes should have access to the NTP server (customer's local one or public one) and to https://get.mirantis.com
-3. In order to provision VMs in vSphere, you need to specify credentials of a user, that can operate vSphere. For a full list of privileges needed for the user, please see [Terrafrom vSphere provisioner documentation](https://registry.terraform.io/providers/hashicorp/vsphere/latest/docs#notes-on-required-privileges).
+3. In order to provision VMs in vSphere, you need to specify credentials of a user, that can operate vSphere. For a full list of privileges needed for the user, please see [Terraform vSphere provisioner documentation](https://registry.terraform.io/providers/hashicorp/vsphere/latest/docs#notes-on-required-privileges).
 
 ### Image and VM template
 
@@ -64,7 +64,7 @@ In order to authenticate, you need to use user credentials that can operate vSph
 
 Next, you need to specify different resources that will be used for VM placement and provisioning.
 
-All the neccessary resources can be obtained with the help of [govc tool](https://github.com/vmware/govmomi/blob/main/govc/README.md) and espically with [govc ls](https://github.com/vmware/govmomi/blob/main/govc/USAGE.md#ls) and [govc find](https://github.com/vmware/govmomi/blob/main/govc/USAGE.md#find) commands.
+All the necessary resources can be obtained with the help of [govc tool](https://github.com/vmware/govmomi/blob/main/govc/README.md) and especially with [govc ls](https://github.com/vmware/govmomi/blob/main/govc/USAGE.md#ls) and [govc find](https://github.com/vmware/govmomi/blob/main/govc/USAGE.md#find) commands.
 
 **Important note:** `datastore` and `datastore_cluster` are two conflicting variables. You should choose either Datastore or Datastore cluster to use
 
@@ -96,7 +96,7 @@ Variable for `bootc-mke3` cluster infrastructure are quite self-descriptive.
 
 Few things that need to be mentioned:
 1. Manager and worker disk sizes should be not less that ones defined in VM template.
-2. IP addresses of managers, workers and gateway should be configured according to vSphere network configuration. DNS should be reacheble by VMs.
+2. IP addresses of managers, workers and gateway should be configured according to vSphere network configuration. DNS should be reachable by VMs.
 3. `cluster_name` variable will be used as a prefix for VM names. E.g. if cluster_name = "bootc-mke3-cluster", then names of managers will look like this: `bootc-mke3-cluster-ctr1`, `bootc-mke3-cluster-ctr2`, etc. Names of workers will look like this: `bootc-mke3-cluster-wrk1`, `bootc-mke3-cluster-wrk2`, etc.
 
 ## Procedure

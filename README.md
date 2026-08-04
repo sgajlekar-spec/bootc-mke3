@@ -12,7 +12,7 @@ For further details, please see [provisioning document](docs/provisioning.md).
 
 ### Assets
 
-Mirantis provides assets for provisioning `bootc-mke3` on different providers. Assets consist of bootable images that can be used to provision virtual machine or baremetale machine.
+Mirantis provides assets for provisioning `bootc-mke3` on different providers. Assets consist of bootable images that can be used to provision a virtual machine or bare-metal machine.
 
 | Type  | Download link | Description | Mirantis product's version |
 | :---- | ------------- | ----------- | -------------------------- |
@@ -21,7 +21,7 @@ Mirantis provides assets for provisioning `bootc-mke3` on different providers. A
 | QCOW2 | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-cloud-mcr29.4-mke3.9.qcow2)      | Standard QEMU/KVM bootable image | MCR 29.4.1 / MKE 3.9.4 |
 
 > [!NOTE]
-> **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider susing **Generic** ISO.
+> **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider using **Generic** ISO.
 
 ## Installation
 

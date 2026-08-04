@@ -2,7 +2,7 @@
 
 Mirantis has performed testing, and finds no reason defects for cases where an MCR/MKE3 cluster includes both manually managed cluster and bootc-mke3 based machines.
 
-Conceptually, Mirantis considers using mixed clusters as a transition state, for customer who intend to move to a full bootc-mke3 cluster.  There are no limitations in the mixed cluster itself, but the bootc-mke3 tooling does not accomodate the mixed state for upgrading.
+Conceptually, Mirantis considers using mixed clusters as a transition state, for customer who intend to move to a full bootc-mke3 cluster.  There are no limitations in the mixed cluster itself, but the bootc-mke3 tooling does not accommodate the mixed state for upgrading.
 
 Note the following limitations
 1. A single MCR25 and MKE3 version must be used across the existing cluster, and the bootc-mke3 machines added must be based off of the same versions
@@ -43,7 +43,7 @@ Iterate through managers, and one at a time add a new bootc-mke3 based machine t
    b. Isolate the worker on the cluster: Runbook: [Isolate a worker on the cluster](#isolate-a-machine-in-the-mcrmke3-cluster)
    c. Runbook: [Remove a machine from the cluster](#remove-a-machine-from-the-mcrmke3-cluster)
 
-#### 2. Worker plan transition
+#### 2. Worker plane transition
 
 * It is recommended to add worker machines to a cluster before removing old machines, in order to maintain scheduling capacity *
 
@@ -155,8 +155,8 @@ There should be no significant change to the MKE3 cluster, and the same workload
 
 #### How long can I keep the cluster mid-transition
 
-There are no functional issues running and standard MCR/MKE operations while the cluster is mid transition. The bootc-mke3 components in the cluster afect only the Operating System layers of the stack.
+There are no functional issues running and standard MCR/MKE operations while the cluster is mid transition. The bootc-mke3 components in the cluster affect only the Operating System layers of the stack.
 
-Workoads can be managed as needed, interupting the process if needed, and the transition can take as long as needed.
+Workloads can be managed as needed, interrupting the process if needed, and the transition can take as long as needed.
 
 Note that you will not be able to perform any MCR / MKE3 upgrades until the transition is complete.

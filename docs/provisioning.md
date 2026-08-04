@@ -14,12 +14,12 @@ For production-grade air-gapped clusters, users should have their own registry t
 
 ## Machines
 
-Cluster should consists of one or more compute machine nodes. In order to use `bootc-mke3`, machines should meet following requirements:
+Cluster should consist of one or more compute machine nodes. In order to use `bootc-mke3`, machines should meet following requirements:
 
 1. All machines must use the `bootc-mke3` source base (image). For available images see [Assets section](../README.md#assets)
 
 > [!NOTE]
-> **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider susing **Generic** ISO. QCOW2 is considered production-grade by default, although it is user's responsiblity to customise it in a proper and secure way.
+> **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider using **Generic** ISO. QCOW2 is considered production-grade by default, although it is user's responsibility to customise it in a proper and secure way.
 
 2. All machines meet MKE hardware requirements. For the list of requirements, please see Mirantis Kubernetes Engine official documentation pages, [hardware requirements section](https://docs.mirantis.com/mke/3.8/common/mke-hw-reqs.html)
 
@@ -27,7 +27,7 @@ Cluster should consists of one or more compute machine nodes. In order to use `b
 
 In order for the installer to interact with the cluster, the ansible tooling must be able to connect to the machines. As ansible has a flexible system for connecting to machines, a wide variety of [options are available](https://docs.ansible.com/ansible/latest/inventory_guide/connection_details.html).
 
-Preferred way of machine connection is SSH with paswordless user that has sudo access.
+Preferred way of machine connection is SSH with a passwordless user that has sudo access.
 
 ## Network 
 
@@ -51,7 +51,7 @@ This `bootc-mke3` tooling includes a number of terraform modules that can provis
 
 ### Manual provisioning (roll your own)
 
-There is no requirement to use any of the Mirantis tooling for provisioning. If a cluster has custom needs that are not addressed with the Mirantis provisioning, then the cluster can be created with any approach, as long as the resulting clustess provides the needed machine and cluster components, and an ansible inventory can be created.
+There is no requirement to use any of the Mirantis tooling for provisioning. If a cluster has custom needs that are not addressed with the Mirantis provisioning, then the cluster can be created with any approach, as long as the resulting cluster provides the needed machine and cluster components, and an ansible inventory can be created.
 
 Further details can be found in the runbook for [manually provisioning a cluster](runbooks/provision-manually.md)
 
