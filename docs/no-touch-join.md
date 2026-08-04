@@ -4,8 +4,9 @@
 machine join an existing Docker Swarm / MKE 3 cluster **as a worker** with no
 SSH access and no manual `docker swarm join` — "no-touch". The only per-node
 input is a worker join token and a manager endpoint, injected by whatever
-provisions the machine (cloud-init user-data, kickstart, or systemd
-credentials).
+provisions the machine (kickstart for bare-metal ISO installs — the standard
+production path; cloud-init user-data on cloud-platform builds only,
+primarily used for internal testing; or systemd credentials).
 
 No-touch join is the **standard process for adding machines to a cluster after
 the initial install**: production clusters typically disable SSH on cluster
@@ -34,8 +35,9 @@ which:
    1. **systemd credentials** — `swarm.token` + `swarm.manager` imported via
       `ImportCredential=` (SMBIOS, kernel cmdline, or encrypted/TPM-bound
       credstore). Most secure option.
-   2. **tmpfs file** — `/run/mke3/swarm-join.env`. Intended for cloud-init:
-      the file lives in RAM and never persists across reboot.
+   2. **tmpfs file** — `/run/mke3/swarm-join.env`. Intended for cloud-init
+      (cloud-platform builds only): the file lives in RAM and never persists
+      across reboot.
    3. **persistent file** — `/etc/mke3/swarm-join.env`. Intended for
       kickstart-provisioned bare metal; shredded after a confirmed join.
 3. **Waits for Docker** to become healthy (up to 300 s by default).

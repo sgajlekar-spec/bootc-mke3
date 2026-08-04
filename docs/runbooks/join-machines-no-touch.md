@@ -66,48 +66,101 @@ SWARM_TOKEN=SWMTKN-1-<your-worker-token>
 SWARM_MANAGER=10.0.0.10:2377
 ```
 
-#### Cloud (cloud-init user-data — tmpfs delivery)
+**Kickstart is the primary path**: production `bootc-mke3` machines are
+provisioned from the ISO (bare metal), where kickstart is the standard
+customization mechanism. Cloud-init applies **only to the cloud-platform
+builds** (AMI/QCOW2) — it does not exist on bare-metal ISO installs — and
+those builds are primarily used for internal testing. systemd credentials
+work on either, where the infrastructure can deliver them.
 
-The credential file itself is written to tmpfs and never touches disk. Note
-that cloud-init independently caches the raw user-data under `/var/lib/cloud`;
-that cache is scrubbed automatically after a successful join.
+Two node-local gaps must be handled in the same provisioning payload,
+whichever delivery path you use:
 
-A fresh instance's own firewalld (active by default) ships only the
-`ssh`, `cockpit`, and `dhcpv6-client` services — none of the cluster ports.
-The swarm join itself still succeeds (it's outbound-only), but the node is
-then unreachable for inbound gossip/overlay traffic until the firewall is
-opened. This is unrelated to the cluster's `disable_firewalld` Ansible
-variable (default `false` — Ansible-managed nodes keep firewalld on and get
-per-service rules from `tasks/mke-open-ports-tasks.yml`): a no-touch-joined
-worker is never touched by the Ansible installer at all, so that variable's
-value elsewhere is irrelevant here — the node keeps the OS image's raw
-firewalld defaults until user-data configures it directly. Use the same
-zones/services `mke-open-ports-tasks.yml` applies to a worker (`public` zone
-for `mke_worker_internal`, `trusted` zone plus a trusted loopback interface
-for `mke_worker_self`), so the node ends up firewall-equivalent to one
-Ansible actually installed.
+- **Firewall.** A fresh machine's own firewalld (active by default) ships
+  only the `ssh`, `cockpit`, and `dhcpv6-client` services — none of the
+  cluster ports. The swarm join itself still succeeds (it's outbound-only),
+  but the node is then unreachable for inbound gossip/overlay traffic until
+  the firewall is opened. This is unrelated to the cluster's
+  `disable_firewalld` Ansible variable (default `false` — Ansible-managed
+  nodes keep firewalld on and get per-service rules from
+  `tasks/mke-open-ports-tasks.yml`): a no-touch-joined worker is never
+  touched by the Ansible installer at all, so that variable's value
+  elsewhere is irrelevant here — the node keeps the OS image's raw
+  firewalld defaults until the provisioning payload configures it directly.
+  Use the same zones/services `mke-open-ports-tasks.yml` applies to a
+  worker (`public` zone for `mke_worker_internal`, `trusted` zone plus a
+  trusted loopback interface for `mke_worker_self`), so the node ends up
+  firewall-equivalent to one Ansible actually installed. The
+  `firewall-cmd --permanent` + `--reload` pair takes effect immediately; no
+  reboot is needed.
+- **Kernel module preload.** Baked-in host hardening sets
+  `kernel.modules_disabled=1`, which blocks loading the `xt_statistic`
+  kernel module on any node whose kube-proxy starts *after* that lockdown
+  sysctl has already applied — which is every node except whichever one
+  happened to win the boot-time race during the initial cluster stand-up,
+  so this recurs on every no-touch-joined worker. Symptom: calico-node's
+  install-cni init container `CrashLoopBackOff`, with kube-proxy logging
+  `iptables-restore: Couldn't load match 'statistic'`. Preload the module
+  via `/etc/modules-load.d/xt_statistic.conf` (content: the single line
+  `xt_statistic`) — `systemd-modules-load.service` is ordered
+  `Before=systemd-sysctl.service`, so a module listed there loads before
+  the lockdown sysctl applies, but only on the *next* boot. A
+  no-touch-joined worker is already running with the module unavailable, so
+  it needs a self-triggered reboot after joining — gated on the join
+  sentinel (`/var/lib/mke3/joined`, see
+  [no-touch join](../no-touch-join.md)) so it can't race the join itself,
+  via a small oneshot unit that polls then reboots.
 
-Separately, baked-in host hardening sets `kernel.modules_disabled=1`, which
-blocks loading the `xt_statistic` kernel module on any node whose kube-proxy
-starts *after* that lockdown sysctl has already applied — which is every
-node except whichever one happened to win the boot-time race during the
-initial cluster stand-up, so this recurs on every no-touch-joined worker.
-Symptom: calico-node's install-cni init container `CrashLoopBackOff`, with
-kube-proxy logging `iptables-restore: Couldn't load match 'statistic'`.
-Preload the module via `/etc/modules-load.d/xt_statistic.conf` (content: the
-single line `xt_statistic`) — `systemd-modules-load.service` is ordered
-`Before=systemd-sysctl.service`, so a module listed there loads before the
-lockdown sysctl applies, but only on the *next* boot. A no-touch-joined
-worker is already running with the module unavailable, so it needs a
-self-triggered reboot after joining — gated on the join sentinel
-(`/var/lib/mke3/joined`, see [no-touch join](../no-touch-join.md)) so it
-can't race the join itself, via a small oneshot unit that polls then
-reboots.
+#### Bare metal (kickstart — the standard path; file shredded after join)
 
-Putting all of that together, pass this as instance user-data (e.g. `aws
-ec2 run-instances --user-data file://...`) — the `firewall-cmd --permanent`
-and `--reload` calls take effect immediately, no reboot needed for those;
-only the module preload needs the guarded reboot:
+Append to the kickstart `%post`: the credential file, the firewalld
+services (correct zones), the `xt_statistic` preload, and the
+sentinel-gated reboot unit:
+
+```
+%post --erroronfail
+install -d -m 0700 /etc/mke3
+cat > /etc/mke3/swarm-join.env <<'EOF'
+SWARM_TOKEN=SWMTKN-1-<your-worker-token>
+SWARM_MANAGER=10.0.0.10:2377
+EOF
+chmod 600 /etc/mke3/swarm-join.env
+
+firewall-cmd --zone=trusted --add-interface=lo --permanent
+firewall-cmd --zone=public --add-service=mke_worker_internal --permanent
+firewall-cmd --zone=trusted --add-service=mke_worker_self --permanent
+firewall-cmd --reload
+
+echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
+
+cat > /etc/systemd/system/mke3-postjoin-reboot.service <<'EOF'
+[Unit]
+Description=Reboot once to activate xt_statistic after no-touch join
+After=swarm-join.service
+ConditionPathExists=!/var/lib/mke3/postjoin-reboot-done
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for i in $(seq 1 60); do [ -f /var/lib/mke3/joined ] && break; sleep 5; done; [ -f /var/lib/mke3/joined ] && touch /var/lib/mke3/postjoin-reboot-done && systemctl reboot'
+EOF
+systemctl enable --now mke3-postjoin-reboot.service
+%end
+```
+
+The credential file is written to disk but shredded automatically after a
+confirmed join.
+
+#### Cloud (cloud-init user-data — cloud builds only; tmpfs delivery)
+
+Applies only to the cloud-platform builds (AMI/QCOW2), primarily used for
+internal testing. The credential file itself is written to tmpfs and never
+touches disk. Note that cloud-init independently caches the raw user-data
+under `/var/lib/cloud`; that cache is scrubbed automatically after a
+successful join.
+
+The same firewalld and `xt_statistic` handling as the kickstart path above,
+expressed as cloud-config — pass as instance user-data (e.g. `aws ec2
+run-instances --user-data file://...`):
 
 ```yaml
 #cloud-config
@@ -142,43 +195,6 @@ reachable from containers — require IMDSv2 with a hop limit of 1:
 
 ```
 --metadata-options HttpTokens=required,HttpPutResponseHopLimit=1
-```
-
-#### Bare metal (kickstart — file shredded after join)
-
-Append to the kickstart `%post`. The same firewalld gap, `xt_statistic`
-gap, and guarded-reboot need described above apply here too — same zones,
-same module, same sentinel-gated reboot unit, just written directly instead
-of via cloud-init's `write_files`/`runcmd`:
-
-```
-%post --erroronfail
-install -d -m 0700 /etc/mke3
-cat > /etc/mke3/swarm-join.env <<'EOF'
-SWARM_TOKEN=SWMTKN-1-<your-worker-token>
-SWARM_MANAGER=10.0.0.10:2377
-EOF
-chmod 600 /etc/mke3/swarm-join.env
-
-firewall-cmd --zone=trusted --add-interface=lo --permanent
-firewall-cmd --zone=public --add-service=mke_worker_internal --permanent
-firewall-cmd --zone=trusted --add-service=mke_worker_self --permanent
-firewall-cmd --reload
-
-echo xt_statistic > /etc/modules-load.d/xt_statistic.conf
-
-cat > /etc/systemd/system/mke3-postjoin-reboot.service <<'EOF'
-[Unit]
-Description=Reboot once to activate xt_statistic after no-touch join
-After=swarm-join.service
-ConditionPathExists=!/var/lib/mke3/postjoin-reboot-done
-
-[Service]
-Type=oneshot
-ExecStart=/bin/sh -c 'for i in $(seq 1 60); do [ -f /var/lib/mke3/joined ] && break; sleep 5; done; [ -f /var/lib/mke3/joined ] && touch /var/lib/mke3/postjoin-reboot-done && systemctl reboot'
-EOF
-systemctl enable --now mke3-postjoin-reboot.service
-%end
 ```
 
 #### systemd credentials (most secure)
