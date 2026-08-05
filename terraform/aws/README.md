@@ -3,7 +3,7 @@
 Calls the [`terraform-mirantis-provision-aws` `mke3` example](https://registry.terraform.io/modules/terraform-mirantis-modules/provision-aws/mirantis/latest/examples/mke3) directly as a module (pinned to `v0.1.7`) to provision EC2 nodes for `bootc-mke3` and produce an ansible inventory.
 
 > [!IMPORTANT]
-> AWS-based provisioning is considered **dev/testing only**, not a production-grade path. Because of that, the `bootc-mke3` AMI is not published anywhere automated. To obtain a current AMI ID (and the AWS account that owns it), visit the `#bootc-internal` channel in the Mirantis Slack space and read the latest release message. See also [docs/provisioning.md](../../docs/provisioning.md) and the [AWS provisioning runbook](../../docs/runbooks/provision-terraform-aws.md).
+> AWS-based provisioning is considered **dev/testing only**, not a production-grade path. Because of that, the `bootc-mke3` AMI is not published anywhere automated. Contact your Mirantis representative to obtain a current AMI ID and its owning AWS account. See also [docs/provisioning.md](../../docs/provisioning.md) and the [AWS provisioning runbook](../../docs/runbooks/provision-terraform-aws.md).
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Calls the [`terraform-mirantis-provision-aws` `mke3` example](https://registry.t
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars — set name, ami_id/ami_owner (from #bootc-internal), node counts/types
+# edit terraform.tfvars — set name, ami_id/ami_owner (see note above), node counts/types
 terraform init
 terraform apply
 # retrieve the generated ansible inventory
