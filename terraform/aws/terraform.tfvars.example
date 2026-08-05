@@ -1,7 +1,7 @@
 // used to name infrastructure (CHANGE THIS)
 name = "bootc-mke3"
 aws = {
-  region = "us-east-1"
+  region = "us-east-2"
 }
 
 subnets = {

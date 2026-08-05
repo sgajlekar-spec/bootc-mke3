@@ -97,7 +97,7 @@ invalidates it. Revoke bundles for departed users.
 
 No. All access goes through the MKE endpoint over TLS — consistent with
 clusters that disable SSH after install (see
-[no-touch join](no-touch-join.md).
+[no-touch join](no-touch-join.md)).
 
 ### Where is this documented upstream?
 

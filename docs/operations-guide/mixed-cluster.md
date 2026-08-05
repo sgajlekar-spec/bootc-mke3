@@ -1,6 +1,6 @@
 # bootc-mke3 mixed clusters
 
-Mirantis has performed testing, and finds no reason defects for cases where an MCR/MKE3 cluster includes both manually managed cluster and bootc-mke3 based machines.
+Mirantis has performed testing and found no defects for cases where an MCR/MKE3 cluster includes both manually managed and bootc-mke3 based machines.
 
 Conceptually, Mirantis considers using mixed clusters as a transition state, for customer who intend to move to a full bootc-mke3 cluster.  There are no limitations in the mixed cluster itself, but the bootc-mke3 tooling does not accommodate the mixed state for upgrading.
 
