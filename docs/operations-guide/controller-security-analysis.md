@@ -87,7 +87,7 @@ Existing mitigations the controller applies: image/path values are shell-quoted 
 ### 2.4 Secrets, network, logging
 
 - Controller reads no application secrets directly; uses its in-cluster ServiceAccount token only.
-- `dockerDaemonConfig` may carry registry credentials embedded by the user; it is stored as plain CRD spec text (not a `Secret`), so it is readable by anyone with `get` on `ClusterUpgrade` objects and appears in etcd unencrypted unless [encryption at rest](#4-secrets--data-at-rest) is enabled.
+- `dockerDaemonConfig` may carry registry credentials embedded by the user; it is stored as plain CRD spec text (not a `Secret`), so it is readable by anyone with `get` on `ClusterUpgrade` objects and appears in etcd unencrypted unless [encryption at rest](harden-mke3-kubernetes.md#7-enable-etcd-encryption-at-rest) is enabled.
 - Metrics (`:8080/metrics`) and health (`:8081/healthz`,`/readyz`) are plain HTTP, **unauthenticated**, ClusterIP-only by default (`cmd/main.go:29-53`, `chart/cluster-upgrade-controller/templates/deployment.yaml:35-53`). No admission webhook server.
 - Logging via `zap` in development mode by default (`cmd/main.go:39-40`) — verbose but not a security issue per se; recommend `Development: false` in production to avoid leaking stack traces.
 
