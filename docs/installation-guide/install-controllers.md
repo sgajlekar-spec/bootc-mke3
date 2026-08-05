@@ -4,8 +4,7 @@ A default run of the [installation runbook](install-bootc-mke3.md) deploys
 three additional controllers to the cluster, on top of MKE itself: the
 System Upgrade Controller (SUC), `cluster-upgrade-controller`, and
 `machine-config-controller`. This runbook covers what each one is, where
-their versions come from, a chart-sourcing gap specific to
-`machine-config-controller`, and how to verify the result. It does not cover
+their versions come from, and how to verify the result. It does not cover
 *using* the controllers day to day — see the
 [machine configuration runbook](../operations-guide/machine-config-operations.md) for
 `machine-config-controller`.
@@ -19,8 +18,9 @@ their versions come from, a chart-sourcing gap specific to
 2. Cluster access per the [access runbook](../operations-guide/access-cluster.md) — everything
    below uses the MKE client bundle's kubeconfig; no SSH to cluster machines
    is required.
-3. `kubectl` on your workstation. `helm` and `scp` are additionally needed
-   for the chart-override procedure below.
+3. `kubectl` on your workstation. `helm` is additionally needed only if you
+   deliberately override `machine_config_controller_chart` back to an
+   `oci://` registry reference (see below).
 
 ## Procedure
 
@@ -55,61 +55,52 @@ that image build baked in:
 
 The install automation's defaults in `vars/common-vars.yml` already resolve
 SUC's manifests (`suc_crd_manifest_src`, `suc_controller_manifest_src`) and
-the `cluster-upgrade-controller` chart (`cluster_upgrade_controller_chart`)
-from a **node-fetched copy** of these in-image sources — pulled onto the
-Ansible controller from a cluster node before being applied, with no
-separate version pinned in Ansible that could drift from what the nodes
-actually have cached.
+both controller charts (`cluster_upgrade_controller_chart`,
+`machine_config_controller_chart`) from a **node-fetched copy** of these
+in-image sources — pulled onto the Ansible controller from a cluster node
+before being applied, with no separate version pinned in Ansible that could
+drift from what the nodes actually have cached.
 
-### `machine-config-controller`'s chart is the exception — it registry-pulls by default
+`helm upgrade --install` never creates, updates, or deletes an
+already-installed chart's CRDs (that's Helm's own `crds/` convention, by
+design, to avoid destructive schema changes on upgrade). For
+`machine-config-controller`, the install automation also applies the
+node-fetched chart's `crds/*.yaml` directly after every Helm install, so its
+CRDs stay in sync with the chart automatically with no manual step.
+`cluster-upgrade-controller`'s CRDs are not auto-applied this way today — if
+you change its chart version, apply its `crds/*.yaml` by hand.
 
-Unlike `cluster-upgrade-controller`, `machine_config_controller_chart`
-defaults to `oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller`
-— a live registry pull, every time, with no node-fetched local-chart
-default. A vanilla install therefore both depends on that registry being
-reachable and can end up running a chart version older than what the image
-actually baked, since the registry default can lag behind a given image
-build's `versions.txt`.
+### Overriding a controller's chart version
 
-To install the in-image chart version instead:
+Both `cluster_upgrade_controller_chart` and `machine_config_controller_chart`
+default to the node-fetched local chart path above. Override either one
+back to an `oci://` registry reference in two cases:
 
-1. Copy the chart off any cluster node onto your Ansible controller:
+1. You deliberately want a controller version other than the one preloaded
+   on this image build (accepts the tradeoff of an online pull, or air-gap
+   it yourself).
+2. `mke-post-install-playbook.yml` is being run standalone/disconnected
+   from `mke-install-playbook.yml` on a different Ansible controller or
+   `playbook_dir` than the one that fetched the chart — the node-fetched
+   defaults only exist under the `playbook_dir` that ran
+   `mke-install-playbook.yml`.
 
-   ```sh
-   scp -r <ssh-user>@<any-node>:/usr/share/mke-controllers/manifests/machine-config-controller-chart \
-     ./machine-config-controller-chart
-   ```
+To override, for example, `machine-config-controller`:
 
-2. Re-run the machine-config-controller install pointed at the local chart:
+```sh
+ansible-playbook -i <path-to-your-inventory> ansible/mke-install-playbook.yml \
+  -e machine_config_controller_chart=oci://registry.mirantis.com/machine-config-controller/charts/machine-config-controller \
+  -e machine_config_controller_version=<desired-version>
+```
 
-   ```sh
-   ansible-playbook -i <path-to-your-inventory> ansible/mke-install-playbook.yml \
-     -e machine_config_controller_chart=$PWD/machine-config-controller-chart
-   ```
-
-   `machine_config_controller_version` is silently ignored once the chart
-   argument is a local path — Helm accepts `--version` alongside a local
-   chart path without error, it just has no effect.
-
-3. **Always follow with a direct CRD apply**, whether this is a fresh
-   install or a version bump on an already-installed chart:
-
-   ```sh
-   kubectl apply -f ./machine-config-controller-chart/crds/*.yaml
-   ```
-
-   `helm upgrade --install` never creates, updates, or deletes an
-   already-installed chart's CRDs — that's Helm's own `crds/` convention, by
-   design, to avoid destructive schema changes on upgrade. If the controller
-   was ever installed before with a different chart (including the
-   registry-default version a vanilla run just used), its CRD schema stays
-   pinned to whatever that first install shipped, silently: Helm gives no
-   warning that it skipped the CRD. A `MachineConfigChange` resource using a
-   spec field the newer chart added is then rejected with a `strict decoding
-   error: unknown field ...` until the CRD is applied directly. This applies
-   to any Helm chart that ships CRDs, not just this one — apply the same
-   fix to `cluster-upgrade-controller`'s CRD after a chart override there
-   too.
+`machine_config_controller_version` (and `cluster_upgrade_controller_version`
+for the sibling controller) is only consulted once the chart var is an
+`oci://` reference — the install task branches on that automatically, and
+with a local chart path the version arg is dropped entirely rather than
+silently ignored. Note that overriding `machine_config_controller_chart` to
+an `oci://` reference also skips its automatic CRD apply (the CRD manifests
+only exist on disk for the node-fetched chart) — apply
+`crds/*.yaml` by hand after an `oci://` override if it bumps the CRD schema.
 
 ### Verify controller pod images
 
@@ -145,8 +136,8 @@ fails.
 
 | Symptom | Likely cause | Remediation |
 |---|---|---|
-| `kubectl apply` on a `MachineConfigChange` (or `ClusterUpgrade`) fails `strict decoding error: unknown field ...` | The CRD is stale relative to the chart actually installed | `kubectl apply -f <chart>/crds/*.yaml` for the controller that owns the CRD |
-| A controller's pod image doesn't match `versions.txt` | Its chart is still on a registry default (`machine-config-controller`, most commonly), or an override didn't take | Re-run the chart-override procedure above; re-verify |
+| `kubectl apply` on a `MachineConfigChange` (or `ClusterUpgrade`) fails `strict decoding error: unknown field ...` | The CRD is stale relative to the chart actually installed — expected for `cluster-upgrade-controller` (no auto CRD apply), or for `machine-config-controller` only after an `oci://` chart override | `kubectl apply -f <chart>/crds/*.yaml` for the controller that owns the CRD |
+| A controller's pod image doesn't match `versions.txt` | The chart var was overridden to an `oci://` registry reference and that registry's chart lags the image build | Remove the override (or point `*_version` at the desired tag) and re-run; re-verify |
 | `machine-config-controller` deployment not found in namespace `mke` | Its chart hardcodes `targetNamespace: system-upgrade`; look there instead | Not a fault — expected behavior |
 | Locked out of SSH and sudo on every node | `disable_sshd_after_install`/`revoke_sudo_after_install` ran at the end of install (see [install runbook](install-bootc-mke3.md#post-install-automation)) | Break-glass recovery below |
 
