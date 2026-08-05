@@ -18,7 +18,7 @@ The standard operating procedure is batch-oriented:
    Already-joined machines are unaffected.
 
 For how the mechanism works internally, see the
-[no-touch join description](../no-touch-join.md).
+[no-touch join description](no-touch-join.md).
 
 ## Requirements
 
@@ -108,7 +108,7 @@ whichever delivery path you use:
   no-touch-joined worker is already running with the module unavailable, so
   it needs a self-triggered reboot after joining — gated on the join
   sentinel (`/var/lib/mke3/joined`, see
-  [no-touch join](../no-touch-join.md)) so it can't race the join itself,
+  [no-touch join](no-touch-join.md)) so it can't race the join itself,
   via a small oneshot unit that polls then reboots.
 
 #### Bare metal (kickstart — the standard path; file shredded after join)

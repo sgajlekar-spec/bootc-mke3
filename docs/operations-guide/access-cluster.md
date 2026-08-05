@@ -15,7 +15,7 @@ authenticated and authorized as the MKE user that downloaded the bundle.
 1. A running MKE 3 cluster and its URL (`mke_url` in the ansible inventory).
 2. MKE user credentials. Admin credentials are configured at install time in
    `ansible/vars/mke-creds.yml` (default `admin`/`password` — see the
-   [installation runbook](install-bootc-mke3.md)).
+   [installation runbook](../installation-guide/install-bootc-mke3.md)).
 3. On your workstation: `kubectl` and/or the `docker` CLI; `curl`, `jq`, and
    `unzip` for the API download path.
 
@@ -97,7 +97,7 @@ invalidates it. Revoke bundles for departed users.
 
 No. All access goes through the MKE endpoint over TLS — consistent with
 clusters that disable SSH after install (see
-[no-touch join](../no-touch-join.md)).
+[no-touch join](no-touch-join.md).
 
 ### Where is this documented upstream?
 

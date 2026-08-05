@@ -3,14 +3,14 @@
 Apply host-level configuration — DNS, NTP, kernel sysctls/modules, and
 structured cluster-wide reboots — via the baked-in `machine-config-controller`,
 using the `MachineConfigChange` custom resource. See the
-[controllers runbook](install-controllers.md) for what deploys this
+[controllers runbook](../installation-guide/install-controllers.md) for what deploys this
 controller, the `mke`/`system-upgrade` namespace note, and how to verify its
 version; this runbook only covers using it once it's confirmed healthy.
 
 ## Requirements
 
 1. `machine-config-controller` deployed and verified per the
-   [controllers runbook](install-controllers.md).
+   [controllers runbook](../installation-guide/install-controllers.md).
 2. Cluster access per the [access runbook](access-cluster.md) — no SSH is
    needed for anything below.
 3. The CRD's actual schema, read from the cluster you're operating on, not
@@ -111,6 +111,6 @@ the cluster afterwards (see the upstream runbook's reconvergence section).
 
 | Symptom | Likely cause | Remediation |
 |---|---|---|
-| `kubectl apply` fails `strict decoding error: unknown field "spec.reboot"` (or any other module) | The controller's CRD is stale relative to its chart | See the [controllers runbook](install-controllers.md#machine-config-controllers-chart-is-the-exception--it-registry-pulls-by-default) for `kubectl apply -f <chart>/crds/*.yaml` |
+| `kubectl apply` fails `strict decoding error: unknown field "spec.reboot"` (or any other module) | The controller's CRD is stale relative to its chart | See the [controllers runbook](../installation-guide/install-controllers.md#machine-config-controllers-chart-is-the-exception--it-registry-pulls-by-default) for `kubectl apply -f <chart>/crds/*.yaml` |
 | `Applied=False/Applying` stuck for a long time | A targeted node isn't converging (reboot never returned, drain stuck) | See the upstream [structured reboot runbook](https://github.com/Mirantis/machine-config-controller/blob/main/docs/structured-reboot.md#stuck-node-diagnosis-and-recovery) — the same Plan/job inspection it describes applies to non-reboot modules too |
 | A `mcc-reboot` resource is still applied well after its rollout finished | Not deleted post-rollout | Delete it — a lingering reboot resource re-triggers once on any node that later joins the cluster |

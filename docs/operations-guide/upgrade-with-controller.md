@@ -44,7 +44,7 @@ No SSH and no Ansible inventory are required — only `kubectl` access via the
    backup directory. This is required regardless of which upgrade mechanism
    you use.
 2. `cluster-upgrade-controller` installed in the cluster — installed by
-   default as part of a standard [install](install-bootc-mke3.md).
+   default as part of a standard [install](../installation-guide/install-bootc-mke3.md).
 3. A [client bundle](access-cluster.md) with `kubectl` configured against the
    cluster (`export KUBECONFIG=<bundle>/kube.yml`). No SSH to cluster
    machines is required for this path.
@@ -58,7 +58,7 @@ No SSH and no Ansible inventory are required — only `kubectl` access via the
    etc.) the step fails naming the blocked ports and node(s), even if the
    workers' own OS firewall already allows them.
 5. Read access to the target bootc OS image and MKE upgrade image referenced
-   below (see [registry requirements](../provisioning.md#registry)).
+   below (see [registry requirements](../installation-guide/provisioning.md#registry)).
 
 ## Procedure
 

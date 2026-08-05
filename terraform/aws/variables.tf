@@ -39,7 +39,7 @@ variable "subnets" {
 }
 
 variable "nodegroups" {
-  description = "A map of machine group definitions. Each entry must specify exactly one AMI source: either 'platform' (built-in library lookup, for stock RHEL/Ubuntu/etc. images) or 'ami_id'+'ami_owner' (direct lookup). bootc-mke3 nodegroups always use the 'ami_id'+'ami_owner' path — see terraform.tfvars.example and docs/runbooks/provision-terraform-aws.md for how to obtain a current bootc AMI ID."
+  description = "A map of machine group definitions. Each entry must specify exactly one AMI source: either 'platform' (built-in library lookup, for stock RHEL/Ubuntu/etc. images) or 'ami_id'+'ami_owner' (direct lookup). bootc-mke3 nodegroups always use the 'ami_id'+'ami_owner' path — see terraform.tfvars.example and docs/installation-guide/provision-terraform-aws.md for how to obtain a current bootc AMI ID."
   type = map(object({
     // platform-based AMI selection (mutually exclusive with ami_id)
     platform = optional(string)

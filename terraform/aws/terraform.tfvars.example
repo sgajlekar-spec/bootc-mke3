@@ -34,7 +34,7 @@ is_bootc_based = true
 // image is NOT part of the module's built-in 'platform' library. AWS AMIs exist for
 // this purpose but AMI IDs are not published or announced publicly — contact your
 // Mirantis representative to obtain a current AMI ID and the AWS account that owns
-// it. See also the note in docs/provisioning.md and docs/runbooks/provision-terraform-aws.md.
+// it. See also the note in docs/installation-guide/provisioning.md and docs/installation-guide/provision-terraform-aws.md.
 nodegroups = {
   "AMngr" = { // managers
     ami_id      = "ami-xxxxxxxxxxxxxxxxx" // bootc-mke3 AMI ID — see note above

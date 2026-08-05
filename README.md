@@ -4,11 +4,16 @@
 
 This repository contains a collection of tool, utilities and guides for managing and operating with `bootc-mke3`. These tools support operations, automation, and configuration for secure and scalable container environments.
 
-## Provisioning
+## Table of Contents
 
-Provisioning is the process of preparing a cluster of `bootc-mke3` compute nodes within a network environment that meets the requirements for deploying and operating Mirantis products.
+- [Installation Guide](#installation-guide)
+  - [Assets](#assets)
+- [Operations Guide](#operations-guide)
+- [Troubleshooting Guide](#troubleshooting-guide)
 
-For further details, please see [provisioning document](docs/provisioning.md).
+## Installation Guide
+
+Installation covers everything from provisioning bare infrastructure to a running MKE cluster: registry and machine requirements, provisioning with Terraform (vSphere/AWS) or manually, running the Ansible installer, and the controllers deployed by default post-install. See the full guide at [Installation guide documentation pages](docs/installation-guide.md).
 
 ### Assets
 
@@ -16,43 +21,17 @@ Mirantis provides assets for provisioning `bootc-mke3` on different providers. A
 
 | Type  | Download link | Description | Mirantis product's version |
 | :---- | ------------- | ----------- | -------------------------- |
-| ISO   | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-bare-mcr29.6-mke3.9-simple.iso)      | **Simple** ISO with basic kickstart embedded. Unattended Anaconda installation will be performed. See [this document](docs/iso-editions.md#simple) to get more details about Simple image edition. | MCR 29.6.1 / MKE 3.9.5 |
-| ISO   | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-bare-mcr29.6-mke3.9-generic.iso)      | **Generic** ISO without any customisation. See [this document](docs/iso-editions.md#generic-image-customisation.md) to get the details on how to properly customise it | MCR 29.6.1 / MKE 3.9.5 |
+| ISO   | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-bare-mcr29.6-mke3.9-simple.iso)      | **Simple** ISO with basic kickstart embedded. Unattended Anaconda installation will be performed. See [this document](docs/installation-guide/iso-editions.md#simple) to get more details about Simple image edition. | MCR 29.6.1 / MKE 3.9.5 |
+| ISO   | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-bare-mcr29.6-mke3.9-generic.iso)      | **Generic** ISO without any customisation. See [this document](docs/installation-guide/iso-editions.md#generic-image-customisation.md) to get the details on how to properly customise it | MCR 29.6.1 / MKE 3.9.5 |
 | QCOW2 | [Link](https://get.mirantis.com/bootc-mke3/images/bootc-mke3-r9-cloud-mcr29.6-mke3.9.qcow2)      | Standard QEMU/KVM bootable image | MCR 29.6.1 / MKE 3.9.5 |
 
 > [!NOTE]
 > **Simple** ISO edition is used mostly for demo/test purposes. For production-grade clusters consider using **Generic** ISO.
 
-## Installation
+## Operations Guide
 
-Installation in this document refers to the process of deploying Mirantis Kubernetes Engine on top of already provisioned machines (VMs or baremetal). 
+Operations covers day-2 tasks on a running cluster: upgrading it (via the `ClusterUpgrade` CR or the Ansible exception path), adding machines with no-touch join, accessing it with the MKE client bundle, and securing it. See the full guide at [Operations guide documentation pages](docs/operations-guide.md).
 
-To perform installation, [Ansible](https://docs.ansible.com/) is used. There are number of tasks and the playbook that serves this purpose.
-
-Prerequisites for the installation can be found in the [Provisioning](#provisioning) section of this document.
-
-To perform the installation, please see [installation runbook](docs/runbooks/install-bootc-mke3.md).
-
-### Post-install controllers
-
-A default install also deploys the System Upgrade Controller, `cluster-upgrade-controller`, and `machine-config-controller` to the cluster, and hardens SSH/sudo access on every host. See the [controllers runbook](docs/runbooks/install-controllers.md) for what gets deployed and how to verify it, and the [machine configuration runbook](docs/runbooks/machine-config-operations.md) for applying DNS/NTP/kernel/reboot changes cluster-wide via `machine-config-controller`.
-
-## Upgrade
-
-The canonical way to upgrade a `bootc-mke3` cluster is the kube-native `ClusterUpgrade` custom resource, handled by `cluster-upgrade-controller` (installed by default — see [Post-install controllers](#post-install-controllers)). See the [upgrade runbook](docs/runbooks/upgrade-with-controller.md). For clusters where the controller is unavailable or disabled, a manual Ansible-driven exception path exists — see the [Ansible upgrade runbook](docs/runbooks/upgrade-with-ansible.md).
-
-## Adding machines (no-touch join)
-
-No-touch join is the standard way to add worker machines after the initial install: machines join automatically on first boot with an injected join token — no SSH and no installer re-run (SSH is typically disabled on cluster machines post-install). Issue a token per batch and rotate it after the batch joins. See the [no-touch join description](docs/no-touch-join.md) and the [join machines runbook](docs/runbooks/join-machines-no-touch.md).
-
-## Accessing the cluster
-
-Command-line access (`kubectl` and `docker`/Swarm) goes through the MKE client bundle — no SSH to cluster machines needed. See the [cluster access runbook](docs/runbooks/access-cluster.md).
-
-## Security
-
-`bootc-mke3` integrates two Kubernetes controllers, `cluster-upgrade-controller` and `machine-config-controller`, to automate cluster and node lifecycle operations. Both delegate privileged, host-mutating operations to per-node jobs — see the [controller security analysis](docs/controller-security-analysis.md) for the full trust model and risk register, and the [hardening runbook](docs/runbooks/harden-mke3-kubernetes.md) for the concrete steps to configure a secure baseline.
-
-## Troubleshooting
+## Troubleshooting Guide
 
 If you encounter issues, please file an issue on this repository or contact your Mirantis representative.

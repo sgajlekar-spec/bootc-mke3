@@ -13,7 +13,7 @@ the initial install**: production clusters typically disable SSH on cluster
 machines once installed, so the Ansible installer cannot join machines later.
 
 This page describes how the mechanism works. For step-by-step instructions on
-joining machines, see the [no-touch join runbook](runbooks/join-machines-no-touch.md).
+joining machines, see the [no-touch join runbook](join-machines-no-touch.md).
 
 ## Components baked into the image
 

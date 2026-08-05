@@ -8,7 +8,7 @@ Note the following limitations
 1. A single MCR and MKE3 version must be used across the existing cluster, and the bootc-mke3 machines added must be based off of the same versions
 2. bootc-mke3 cluster tooling for installation and upgrading will not be usable until a cluster contains only bootc-mke3 based machines
 
-This manual SSH-based docker swarm join/promote/demote workflow described below is intended specifically for the classic-to-bootc migration scenario, where you still have direct docker CLI access to an existing classic cluster. To add new bootc-mke3 machines to a cluster that is already fully bootc-mke3, use the standard no-touch join mechanism instead: [Join machines with no-touch](../join-machines-no-touch.md).
+This manual SSH-based docker swarm join/promote/demote workflow described below is intended specifically for the classic-to-bootc migration scenario, where you still have direct docker CLI access to an existing classic cluster. To add new bootc-mke3 machines to a cluster that is already fully bootc-mke3, use the standard no-touch join mechanism instead: [Join machines with no-touch](join-machines-no-touch.md).
 
 ## Migrating to bootc-mke3 from a classic MCR/MKE3 cluster
 
@@ -41,7 +41,7 @@ The transition follows the following phases, which refer either to runbooks ment
 Iterate through managers, and one at a time add a new bootc-mke3 based machine to the cluster as a manager, followed by removing a manager when the cluster has stabilized.
 
 1. Add a new manager:
-   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](provision-manually.md)
+   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](../installation-guide/provision-manually.md)
    b. Add the new machine to the cluster: Runbook: [Add a machine to the cluster](#add-a-machine-to-the-mcrmke3-cluster)
    c. Promote the new machine to a manager: Runbook: [Promote a worker to a manager](#promote-a-worker-to-a-manager)
 
@@ -58,7 +58,7 @@ Iterate through managers, and one at a time add a new bootc-mke3 based machine t
 Iterate through workers, and one at a time add a new bootc-mke3 based machine to the cluster as a worker, followed by removing a worker when the cluster has stabilized. It is common also to swap machine in batches, if your workload can handle the capacity disruption.
 
 1. Add a new worker:
-   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](provision-manually.md)
+   a. Provision a new bootc-mke3 machine: Runbook: [Provision a bootc-mke3 machine](../installation-guide/provision-manually.md)
    b. Add the new machine to the cluster: Runbook: [Add a machine to the cluster](#add-a-machine-to-the-mcrmke3-cluster)
 
 2. Remove a worker from the cluster
