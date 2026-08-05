@@ -36,10 +36,16 @@ Once all the variables are set (if needed), perform next two steps:
 
 1. Ensure the expected Ansible inventory file exists and is correct.
 
-2. Run the upgrade
+2. Run the upgrade from the `ansible/` directory, so `ansible.cfg` (which sets
+   `host_key_checking = false`, required for fresh hosts whose SSH host keys
+   aren't yet known) is picked up:
    ```bash
-   ansible-playbook -i <path-to-your-inventory> ansible/mke-upgrade-playbook.yml
+   cd ansible
+   ansible-playbook -i <path-to-your-inventory> mke-upgrade-playbook.yml
    ```
+   Running `ansible-playbook` from outside `ansible/` (e.g. from the repo
+   root) skips `ansible.cfg` and will fail with `Host key verification
+   failed` against newly provisioned hosts.
 
 ## Expected Results
 
