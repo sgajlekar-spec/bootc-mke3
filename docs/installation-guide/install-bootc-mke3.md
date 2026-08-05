@@ -13,7 +13,7 @@ By default, admin user credentials for MKE UI are `admin/password`. If you want 
 
 ## Procedure
 
-1. Ensure expected ansible inventory exists. See [inventory description document](../ansible-inventory-input.md) for more details.
+1. Ensure expected ansible inventory exists. See [inventory description document](ansible-inventory-input.md) for more details.
 2. To override any default values, specify the desired values in the `vars/common-vars.yml` and `vars/mke-creds.yml` files
 3. Optionally: You can set the MCR and MKE licenses via the `mcr_license` and `mke_license` variables respectively.
 4. Run ansible: `ansible-playbook -i <path-to-your-inventory> ansible/mke-install-playbook.yml`
@@ -37,7 +37,7 @@ revoked, on every host, as the last step of the run. A vanilla, unmodified
 run of this runbook therefore locks you out of SSH and sudo on every
 cluster machine with no further action needed. Set both to `false` in
 `vars/common-vars.yml` before installing if you need SSH/sudo afterwards;
-otherwise, use the [cluster access runbook](access-cluster.md) for the
+otherwise, use the [cluster access runbook](../operations-guide/access-cluster.md) for the
 client-bundle-based access path this hardening assumes, or the
 [controllers runbook](install-controllers.md#break-glass-recovery-locked-out-of-ssh-and-sudo)
 for how to recover if you're already locked out.

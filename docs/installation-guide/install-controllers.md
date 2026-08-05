@@ -7,7 +7,7 @@ System Upgrade Controller (SUC), `cluster-upgrade-controller`, and
 their versions come from, a chart-sourcing gap specific to
 `machine-config-controller`, and how to verify the result. It does not cover
 *using* the controllers day to day — see the
-[machine configuration runbook](machine-config-operations.md) for
+[machine configuration runbook](../operations-guide/machine-config-operations.md) for
 `machine-config-controller`.
 
 ## Requirements
@@ -16,7 +16,7 @@ their versions come from, a chart-sourcing gap specific to
    with the default `deploy_suc`, `deploy_cluster_upgrade_controller`, and
    `deploy_machine_config_controller` flags (all `true` in
    `vars/common-vars.yml`).
-2. Cluster access per the [access runbook](access-cluster.md) — everything
+2. Cluster access per the [access runbook](../operations-guide/access-cluster.md) — everything
    below uses the MKE client bundle's kubeconfig; no SSH to cluster machines
    is required.
 3. `kubectl` on your workstation. `helm` and `scp` are additionally needed
@@ -30,7 +30,7 @@ their versions come from, a chart-sourcing gap specific to
 |---|---|---|
 | System Upgrade Controller (SUC) | `system-upgrade` | Runs the per-node `Plan` jobs that `cluster-upgrade-controller` and `machine-config-controller` both drive. Install also patches it with a control-plane-only node affinity, a longer job active-deadline, and a privileged pod-security grant for its service account. |
 | `cluster-upgrade-controller` | `mke` | Reconciles `ClusterUpgrade` custom resources (whole-cluster OS + product upgrades). |
-| `machine-config-controller` | `system-upgrade` (see note below) | Reconciles `MachineConfigChange` custom resources — see the [machine configuration runbook](machine-config-operations.md). |
+| `machine-config-controller` | `system-upgrade` (see note below) | Reconciles `MachineConfigChange` custom resources — see the [machine configuration runbook](../operations-guide/machine-config-operations.md). |
 
 `machine-config-controller`'s Helm release namespace defaults to `mke` in
 `vars/common-vars.yml`, but its chart hardcodes `targetNamespace:

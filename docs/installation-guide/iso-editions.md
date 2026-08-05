@@ -38,7 +38,7 @@ if [ -c /dev/ttyS0 ]; then
 fi
 %end
 ```
-where `<oci-name>` is the name of the `bootc-mke3` OCI image, of the form `registry.mirantis.com/bootc-mke3/r9-bare:<mcr-version>-<mke-version>` (for example, `registry.mirantis.com/bootc-mke3/r9-bare:mcr25.0-mke3.8`) — check the [Assets section](../README.md#assets) or the current release for the exact tag. If you're not planning to perform air-gapped installation and/or use your own image registry, go with the default `bootc-mke3` image for your target platform.
+where `<oci-name>` is the name of the `bootc-mke3` OCI image, of the form `registry.mirantis.com/bootc-mke3/r9-bare:<mcr-version>-<mke-version>` (for example, `registry.mirantis.com/bootc-mke3/r9-bare:mcr25.0-mke3.8`) — check the [Assets section](../../README.md#assets) or the current release for the exact tag. If you're not planning to perform air-gapped installation and/or use your own image registry, go with the default `bootc-mke3` image for your target platform.
 
 > [!WARNING]
 > It's user's responsibility to add those specific kickstart file lines. If it wasn't done, `bootc-mke3` won't be installed properly.

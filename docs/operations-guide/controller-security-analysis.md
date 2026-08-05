@@ -165,7 +165,7 @@ Ordered by leverage (highest-impact / lowest-effort first):
 
 1. **Treat the CRDs as cluster-admin.** Restrict `create`/`update`/`delete` RBAC on `clusterupgrades.upgrade.mirantis.com` and `machineconfigchanges.config.machine-config-controller.io` to a small, audited admin group. Do not grant broadly (R1).
 2. **Lock down the `system-upgrade` namespace.** Deny direct `create`/`update` on `plans.upgrade.cattle.io` and `secrets` in that namespace to everyone except the two controllers' ServiceAccounts and SUC itself; this closes the bypass path (R2).
-3. **Re-scope the MKE scheduling grants after install.** Audit whether `enable_admin_ucp_scheduling` and the `authenticated`→`Scheduler` grant are still required once SUC is running; if MKE supports scoping the privileged/scheduling attributes to a named SA/team instead of "all authenticated," prefer that over the current cluster-wide toggle (R3). See [hardening runbook](runbooks/harden-mke3-kubernetes.md).
+3. **Re-scope the MKE scheduling grants after install.** Audit whether `enable_admin_ucp_scheduling` and the `authenticated`→`Scheduler` grant are still required once SUC is running; if MKE supports scoping the privileged/scheduling attributes to a named SA/team instead of "all authenticated," prefer that over the current cluster-wide toggle (R3). See [hardening runbook](harden-mke3-kubernetes.md).
 4. **Add a registry/content allowlist** (e.g. an admission policy via Kyverno/OPA Gatekeeper, or a validating webhook) for every attacker-influenced OCI reference: `spec.os.image`, `spec.product.mke3.image`, `spec.product.mke4.etcdMaintenance{Image,ArtifactRef}` (R4).
 5. **Add a semantic sysctl allowlist** in front of `MachineConfigChange` (admission policy) that blocks known-dangerous keys (`kernel.core_pattern`, `kernel.modules_disabled`, etc.) rather than relying on syntax validation alone (R5).
 6. **Enable etcd encryption at rest** (`EncryptionConfiguration` on the API server) so the `Secret`/CRD-spec payloads in R6 are not plaintext on disk.
@@ -181,4 +181,4 @@ Ordered by leverage (highest-impact / lowest-effort first):
 - [`docs/architecture.md`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/docs/architecture.md), [`docs/reference.md`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/docs/reference.md), [`README.md#security-model`](https://github.com/Mirantis/machine-config-controller/blob/6b2b670/README.md#security-model)
 - [Rancher System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
 - `ansible/tasks/suc-priv-grant-tasks.yml`, `ansible/tasks/mke-upgrade-controller-tasks.yml`
-- Companion runbook: [Harden MKE3 / Kubernetes](runbooks/harden-mke3-kubernetes.md)
+- Companion runbook: [Harden MKE3 / Kubernetes](harden-mke3-kubernetes.md)

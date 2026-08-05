@@ -1,10 +1,10 @@
 # Harden MKE3 / Kubernetes
 
-This guide walks a system engineer through configuring a `bootc-mke3` cluster for a secure baseline, covering host hardening already built into this repo's Ansible tooling, and the additional MKE/Kubernetes-level controls needed once `cluster-upgrade-controller` and/or `machine-config-controller` are installed. It implements the mitigations from the [controller security analysis](../controller-security-analysis.md) — read that document first for the *why* behind each step here.
+This guide walks a system engineer through configuring a `bootc-mke3` cluster for a secure baseline, covering host hardening already built into this repo's Ansible tooling, and the additional MKE/Kubernetes-level controls needed once `cluster-upgrade-controller` and/or `machine-config-controller` are installed. It implements the mitigations from the [controller security analysis](controller-security-analysis.md) — read that document first for the *why* behind each step here.
 
 ## Prerequisites
 
-1. A working `bootc-mke3` cluster (see [installation runbook](install-bootc-mke3.md)).
+1. A working `bootc-mke3` cluster (see [installation runbook](../installation-guide/install-bootc-mke3.md)).
 2. MKE3 admin credentials and/or a Kubernetes client bundle with `cluster-admin` (client bundle from `ansible/mke-client-bundle-playbook.yml`).
 3. `kubectl` and, for policy steps, [Kyverno](https://kyverno.io/) or [OPA Gatekeeper](https://open-policy-agent.github.io/gatekeeper/) installed if you intend to enforce admission policies (steps 5–6 are optional but recommended).
 4. If `cluster-upgrade-controller` and/or `machine-config-controller` are deployed, know which namespace(s) they and `system-upgrade` run in (`mke` and `system-upgrade` by default per `ansible/vars/common-vars.yml`).
@@ -21,7 +21,7 @@ These controls exist in the Ansible tooling already; confirm they are enabled fo
 | `disable_sshd_after_install` | `true` | Stops and disables `sshd` on every node — closes remote shell access once provisioning is done. |
 | `disable_firewalld` | `false` | Keeps per-service firewalld rules (`tasks/mke-open-ports-tasks.yml`) instead of opening the host to all traffic; only disable if a perimeter firewall already restricts equivalent ports. |
 
-If SSH/console access is needed later (e.g. to run `bootc rollback` manually per the [upgrade runbook](upgrade-bootc-mke3.md#upgrade-rollback)), re-enable it deliberately and revoke it again afterward — do not leave it disabled from install-time policy alone as the only control.
+If SSH/console access is needed later (e.g. to run `bootc rollback` manually per the [upgrade runbook](upgrade-with-ansible.md#upgrade-rollback)), re-enable it deliberately and revoke it again afterward — do not leave it disabled from install-time policy alone as the only control.
 
 Private registry credentials are written to `/etc/ostree/auth.json` with mode `0600`, root:root (`ansible/tasks/private-reg-creds-tasks.yml`) — verify this after install; do not widen the mode.
 
@@ -46,7 +46,7 @@ If your compliance posture requires the narrowest possible grant and MKE cannot 
 
 ### 3. Restrict RBAC on the controller CRDs and `system-upgrade` namespace
 
-Creating or editing a `ClusterUpgrade` or `MachineConfigChange`, or directly editing a `Plan` in `system-upgrade`, is root-equivalent on every node it targets (see [security analysis §1](../controller-security-analysis.md#1-shared-architecture-and-trust-model)). Grant these narrowly:
+Creating or editing a `ClusterUpgrade` or `MachineConfigChange`, or directly editing a `Plan` in `system-upgrade`, is root-equivalent on every node it targets (see [security analysis §1](controller-security-analysis.md#1-shared-architecture-and-trust-model)). Grant these narrowly:
 
 ```yaml
 # cluster-upgrade-admin.yaml — grant only to a small, audited group/SA
@@ -166,7 +166,7 @@ spec:
                 image: "registry.mirantis.com/* | registry.ci.mirantis.com/*"
 ```
 
-Similarly restrict `MachineConfigChange` `spec.kernel.sysctl` keys to a known-safe set if your compliance posture requires it (the CRD only validates key *syntax*, not semantics — see [security analysis §3.3](../controller-security-analysis.md#33-what-the-generated-plans-actually-do-on-nodes)).
+Similarly restrict `MachineConfigChange` `spec.kernel.sysctl` keys to a known-safe set if your compliance posture requires it (the CRD only validates key *syntax*, not semantics — see [security analysis §3.3](controller-security-analysis.md#33-what-the-generated-plans-actually-do-on-nodes)).
 
 ### 7. Enable etcd encryption at rest
 
@@ -226,14 +226,14 @@ rules:
 
 - Re-run the RBAC review in step 3 whenever a new team or CI/CD pipeline requests access to the cluster.
 - Periodically diff the live MKE `UCPAuthorization`/scheduling config against step 2's intended scope — it can drift back to "authenticated" via unrelated MKE upgrades or config imports.
-- Test the `MachineConfigChange` `.mcc-orig` manual-revert path in a non-production cluster before relying on it during an incident — there is no automatic rollback (see [security analysis R8](../controller-security-analysis.md#5-consolidated-risk-register)).
+- Test the `MachineConfigChange` `.mcc-orig` manual-revert path in a non-production cluster before relying on it during an incident — there is no automatic rollback (see [security analysis R8](controller-security-analysis.md#5-consolidated-risk-register)).
 - Scan both the controller and the `machine-config-controller` agent image (`Dockerfile.agent`) in your image-scanning pipeline; the agent image runs as root inside every privileged Job it drives.
 
 ## References
 
-- [Security Analysis: Cluster Management Controllers](../controller-security-analysis.md)
-- [Install bootc-mke3](install-bootc-mke3.md)
-- [Upgrade bootc-mke3](upgrade-bootc-mke3.md)
+- [Security Analysis: Cluster Management Controllers](controller-security-analysis.md)
+- [Install bootc-mke3](../installation-guide/install-bootc-mke3.md)
+- [Upgrade bootc-mke3](upgrade-with-controller.md)
 - [Kubernetes Pod Security Admission](https://kubernetes.io/docs/concepts/security/pod-security-admission/)
 - [Kubernetes Encrypting Secret Data at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
 - [Kubernetes Auditing](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/)

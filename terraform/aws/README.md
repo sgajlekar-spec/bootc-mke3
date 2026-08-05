@@ -3,7 +3,7 @@
 Calls the [`terraform-mirantis-provision-aws` `mke3` example](https://registry.terraform.io/modules/terraform-mirantis-modules/provision-aws/mirantis/latest/examples/mke3) directly as a module (pinned to `v0.1.7`) to provision EC2 nodes for `bootc-mke3` and produce an ansible inventory.
 
 > [!IMPORTANT]
-> AWS-based provisioning is considered **dev/testing only**, not a production-grade path. Because of that, the `bootc-mke3` AMI is not published anywhere automated. Contact your Mirantis representative to obtain a current AMI ID and its owning AWS account. See also [docs/provisioning.md](../../docs/provisioning.md) and the [AWS provisioning runbook](../../docs/runbooks/provision-terraform-aws.md).
+> AWS-based provisioning is considered **dev/testing only**, not a production-grade path. Because of that, the `bootc-mke3` AMI is not published anywhere automated. Contact your Mirantis representative to obtain a current AMI ID and its owning AWS account. See also [docs/installation-guide/provisioning.md](../../docs/installation-guide/provisioning.md) and the [AWS provisioning runbook](../../docs/installation-guide/provision-terraform-aws.md).
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ terraform apply
 terraform output -raw bootc_ansible_output > inventory.yaml
 ```
 
-Then continue with the [`bootc-mke3` install runbook](../../docs/runbooks/install-bootc-mke3.md) using `inventory.yaml` as the ansible inventory.
+Then continue with the [`bootc-mke3` install runbook](../../docs/installation-guide/install-bootc-mke3.md) using `inventory.yaml` as the ansible inventory.
 
 ## Structure
 
