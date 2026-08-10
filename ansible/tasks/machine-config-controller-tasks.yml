@@ -4,7 +4,16 @@
 # Steps:
 #   1. Fetch and extract the client bundle (kube.yml is the kubeconfig).
 #   2. Install machine-config-controller (controller + node agent) via Helm
-#      chart when deploy_machine_config_controller is true.
+#      chart when deploy_machine_config_controller is true — from the
+#      node-fetched local chart (default) or an OCI registry ref, chosen
+#      automatically by whether machine_config_controller_chart starts with
+#      "oci://" (see tasks/fetch-machine-config-controller-chart-tasks.yml).
+#   3. Apply the chart's CRDs directly, since `helm upgrade --install` never
+#      creates, updates, or deletes an already-installed chart's CRDs — this
+#      keeps the CRD schema in sync with the chart on every install, not
+#      just a fresh one. Only possible for the local chart path (the CRD
+#      manifests aren't available on disk for an OCI reference without an
+#      extra pull, so this step is skipped in that branch).
 #
 # Required vars (inherited from the enclosing play):
 #   admin_user  – MKE administrator username       (from vars/mke-creds.yml)
@@ -13,7 +22,7 @@
 #   bundle_dest – local directory for the bundle   (default: playbook_dir/mke-bundle)
 #   deploy_machine_config_controller       – when true, installs machine-config-controller (from vars/common-vars.yml)
 #   machine_config_controller_release_name – Helm release name
-#   machine_config_controller_chart        – OCI chart URL
+#   machine_config_controller_chart        – node-fetched local chart path, or an OCI chart URL
 #   machine_config_controller_version      – chart version
 #   machine_config_controller_namespace    – target namespace (created if absent)
 #
@@ -22,7 +31,7 @@
 - ansible.builtin.include_tasks: tasks/mke-client-bundle-tasks.yml
   when: deploy_machine_config_controller | bool
 
-- name: Install machine-config-controller via Helm
+- name: Install machine-config-controller via Helm (OCI registry chart)
   ansible.builtin.command:
     argv:
       - helm
@@ -37,10 +46,38 @@
       - --create-namespace
       - --kubeconfig
       - "{{ bundle_dest }}/kube.yml"
-  when: deploy_machine_config_controller | bool
+  when: deploy_machine_config_controller | bool and machine_config_controller_chart is match('oci://')
   delegate_to: localhost
   run_once: true
   register: _helm_install
   # helm upgrade --install always reports "upgraded" even when nothing changed;
   # there is no reliable stdout signal for a true no-op.
   changed_when: false
+
+- name: Install machine-config-controller via Helm (node-fetched local chart)
+  ansible.builtin.command:
+    argv:
+      - helm
+      - upgrade
+      - --install
+      - "{{ machine_config_controller_release_name }}"
+      - "{{ machine_config_controller_chart }}"
+      - --namespace
+      - "{{ machine_config_controller_namespace }}"
+      - --create-namespace
+      - --kubeconfig
+      - "{{ bundle_dest }}/kube.yml"
+  when: deploy_machine_config_controller | bool and not (machine_config_controller_chart is match('oci://'))
+  delegate_to: localhost
+  run_once: true
+  register: _helm_install_local
+  changed_when: false
+
+- name: Apply machine-config-controller CRDs (local chart only)
+  ansible.builtin.shell: >-
+    kubectl apply --kubeconfig {{ bundle_dest }}/kube.yml -f {{ machine_config_controller_chart }}/crds/*.yaml
+  when: deploy_machine_config_controller | bool and not (machine_config_controller_chart is match('oci://'))
+  delegate_to: localhost
+  run_once: true
+  register: _mcc_crd_apply
+  changed_when: "'configured' in _mcc_crd_apply.stdout or 'created' in _mcc_crd_apply.stdout"

@@ -30,3 +30,4 @@
 # have been revoked.
 - ansible.builtin.include_tasks: tasks/fetch-controller-manifests-tasks.yml
 - ansible.builtin.include_tasks: tasks/fetch-cluster-upgrade-controller-chart-tasks.yml
+- ansible.builtin.include_tasks: tasks/fetch-machine-config-controller-chart-tasks.yml
